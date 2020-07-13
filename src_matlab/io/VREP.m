@@ -10,9 +10,23 @@ classdef VREP
     %   in V-REP which can be manipulated in MATLAB
     
     properties
+        address_ip
+        port_number
+        connect_wait
+        reconnect
+        time_out
+        data_cycle
+        client_ID
+        
+        
     end
     
     methods
+        function obj = VREP(varargin)
+            if nargin == 0 
+            obj.Prop = varargin;
+         end
+      end
     end
     
 end
