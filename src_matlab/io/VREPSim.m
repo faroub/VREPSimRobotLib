@@ -107,7 +107,7 @@ classdef VREPSim  < handle
         function stopSimulation(obj,operationMode)
              
             if nargin == 1
-                 operationMode = 'oneshot';
+                 operationMode = 'blocking';
              end
              
             obj.m_vrep.simxStopSimulation(obj.m_clientID,validateOperationMode(obj,operationMode));

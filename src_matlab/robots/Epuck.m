@@ -30,13 +30,14 @@ classdef Epuck < DifferentialMobileRobot
     end
     
     methods  (Access = public)
-        function obj = Epuck(vrep, robotName, operationMode)            
+        function obj = Epuck(vrep, robotName)            
 
             if nargin == 0
 
                 error ('Epuck object needs a VREPSim object to communicate with the V-REP simulator ')              
    
             else
+                % get V_REP simulation object
                 obj.m_vrepSim = vrep;
                 obj.m_vrep = obj.m_vrepSim.m_vrep;
                 obj.m_clientID = obj.m_vrepSim.m_clientID;
@@ -48,8 +49,8 @@ classdef Epuck < DifferentialMobileRobot
             m_wheelDistance = 0.053; % m
             
             % get joint handles
-            obj.m_leftJointHandle = getJointHandle(obj, 'ePuck_leftJoint', 'blocking')
-            obj.m_rightJointHandle = getJointHandle(obj, 'ePuck_rightJoint', 'blocking')
+            obj.m_leftJointHandle = getJointHandle(obj, 'ePuck_leftJoint', 'blocking');
+            obj.m_rightJointHandle = getJointHandle(obj, 'ePuck_rightJoint', 'blocking');
             
             
         end

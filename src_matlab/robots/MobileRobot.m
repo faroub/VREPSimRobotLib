@@ -1,4 +1,4 @@
-classdef MobileRobot
+classdef MobileRobot < handle
     %   MobileRobot: base class for mobile robots
     %
     %   A MobileRobot object holds all information related to 

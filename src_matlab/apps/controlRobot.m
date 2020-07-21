@@ -9,13 +9,15 @@ loadScene('/home/faroub/Documents/development-projects/projects-matlab/vrep-proj
 % instantiate VREPSim object
 ObjVREP = VREPSim;
 
-% instantiate Epuck object
-ObjEpuck = Epuck(ObjVREP);
+
 
 if (openConnection(ObjVREP)~=-1)
         
     disp('Connected to remote API server');  
    
+    % instantiate Epuck object
+    ObjEpuck = Epuck(ObjVREP);
+    
     % start simulation
      startSimulation(ObjVREP,'blocking');
     
