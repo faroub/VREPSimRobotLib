@@ -36,9 +36,9 @@ classdef VREPSim  < handle
 
     
     methods  (Access = public)
+        
         function obj = VREPSim(varargin)
             
-
             if nargin == 0
                 
                 obj.m_addressIP = '127.0.0.1';
