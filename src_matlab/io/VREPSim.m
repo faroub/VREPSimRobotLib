@@ -13,6 +13,7 @@ classdef VREPSim  < handle
 
         m_clientID = -1;
         m_vrep = -1;
+        m_syncMode = -1
         
     end
     
@@ -24,32 +25,38 @@ classdef VREPSim  < handle
     
     properties (Access = private)
         
-        
-        m_addressIP 
-        m_portNumber 
-        m_connectWait 
-        m_reconnect 
-        m_timeOut 
-        m_dataCycle 
+     
+        m_addressIP
+        m_portNumber
+        m_connectWait
+        m_reconnect
+        m_timeOut
+        m_dataCycle
         
     end
 
     
     methods  (Access = public)
         
-        function obj = VREPSim(varargin)
+        function obj = VREPSim(simParams)
             
             if nargin == 0
                 
+                disp ('argument <1:simParams> must be provided. Default used: simParams = {''127.0.0.1'', 19997,true,true,5000,5}')
                 obj.m_addressIP = '127.0.0.1';
-                obj.m_portNumber = 19991;
+                obj.m_portNumber = 19997;
                 obj.m_connectWait = true;
                 obj.m_reconnect = true;
                 obj.m_timeOut = 5000;
                 obj.m_dataCycle = 5;
 
             else
-                % parse inputs
+                obj.m_addressIP = simParams{1};
+                obj.m_portNumber = simParams{2};
+                obj.m_connectWait = simParams{3};
+                obj.m_reconnect = simParams{4};
+                obj.m_timeOut = simParams{5};
+                obj.m_dataCycle = simParams{6};
             end
             % using the prototype file (remoteApiProto.m)
             obj.m_vrep = remApi('remoteApi'); 
@@ -57,18 +64,34 @@ classdef VREPSim  < handle
         end
         
         function out = openConnection(obj)
-
+            
+            if (obj.m_clientID~=-1)
+                closeConnection(obj);
+            end
             
             obj.m_clientID = obj.m_vrep.simxStart(obj.m_addressIP,obj.m_portNumber,obj.m_connectWait,obj.m_reconnect,obj.m_timeOut,obj.m_dataCycle);           
             out = obj.m_clientID;
-            disp('Open communication thread');
+            disp('open communication thread');
             
         end
         
         function closeConnection(obj)
             
             obj.m_vrep.simxFinish(obj.m_clientID); 
-            disp('Close communication thread');            
+            disp('close communication thread');            
+            
+        end
+        
+        function pauseCommunication(obj,enable)
+            if (enable)                
+                
+                obj.m_vrep.simxPauseCommunication(obj.m_clientID,1);
+                
+            else
+                
+                obj.m_vrep.simxPauseCommunication(obj.m_clientID,0);
+                
+            end
             
         end
         
@@ -81,26 +104,42 @@ classdef VREPSim  < handle
             if (enable)
                 
                 obj.m_vrep.simxSynchronous(obj.m_clientID,true);
-                disp('Enable synchronous operation mode');
+                disp('enable synchronous operation mode');
                 
             else
                 
                 obj.m_vrep.simxSynchronous(obj.m_clientID,false);
-                disp('Disable synchronous operation mode');
+                disp('disable synchronous operation mode');
 
                 
             end
             
         end
         
-        function startSimulation(obj,operationMode)
+        function startSimulation(obj,enableSync, operationMode)
              
-            if nargin == 1
-                 operationMode = 'oneshot';
-             end
-             
+            
+            switch nargin
+                case 1
+                    enableSync = 1;
+                    operationMode = 'oneshot';
+
+                case 2
+                    operationMode = 'oneshot';
+            end
+
+            
+            % enable synchronous mode
+            enableSynchronousMode(obj,enableSync);
+            if (enableSync)
+                obj.m_syncMode = 1;
+            else
+                obj.m_syncMode = 0;
+            end
+            
+            % start simulation
             obj.m_vrep.simxStartSimulation(obj.m_clientID,validateOperationMode(obj,operationMode));
-            disp('Start V-REP simulation');
+            disp('start V-REP simulation');
             
         end
         
@@ -111,7 +150,7 @@ classdef VREPSim  < handle
              end
              
             obj.m_vrep.simxStopSimulation(obj.m_clientID,validateOperationMode(obj,operationMode));
-            disp('Stop V-REP simulation');
+            disp('stop V-REP simulation');
             
         end
         
@@ -122,7 +161,7 @@ classdef VREPSim  < handle
             end
              
             obj.m_vrep.simxPauseSimulation(obj.m_clientID,validateOperationMode(obj,operationMode));
-            disp('Pause V-REP simulation');
+            disp('pause V-REP simulation');
             
         end
         
@@ -132,13 +171,13 @@ classdef VREPSim  < handle
             
         end
       
-        function getPinTime(obj)
+        function getPingTime(obj)
            
             obj.m_vrep.simxGetPingTime(obj.m_clientID);            
             
         end
         
-        function SendSynchronousTrigger(obj)
+        function sendSynchronousTrigger(obj)
            
             obj.m_vrep.simxSynchronousTrigger(obj.m_clientID);            
             
@@ -167,18 +206,20 @@ classdef VREPSim  < handle
                         out =  obj.m_vrep.simx_opmode_remove;                                   
                 end
            else
-               error ('Argument operationMode must be a member of this set : oneshot, blocking, streaming, oneshot_split, streaming_split, discontinue, buffer, remove')
+               error ('argument <1:operationMode> must be a member of this set : oneshot, blocking, streaming, oneshot_split, streaming_split, discontinue, buffer, remove')
            end
         end
         
         function delete(obj)
-                % make sure that the last command sent out had time to arrive
-                getPinTime(obj);
-                % stop vrep simulation from Matlab script
-                stopSimulation(obj);
-                % close all opened connections
-                closeConnection(obj);
-                disp('VREPSim object deleted');
+            % make sure that the last command sent out had time to arrive
+            getPingTime(obj);    
+            % stop vrep simulation
+            stopSimulation(obj);   
+            % close opened connections
+            closeConnection(obj);
+            % explicitely call the destructor!
+            obj.m_vrep.delete();
+            disp('VREPSim object deleted');
 
         end
             

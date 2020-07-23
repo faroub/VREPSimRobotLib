@@ -1,5 +1,5 @@
 function loadScene(scenePathAndName,location)
-    disp('Load simulation scene');
+    disp('load simulation scene');
     % using the prototype file (remoteApiProto.m)
     vrep=remApi('remoteApi'); 
     % just in case, close all opened connections

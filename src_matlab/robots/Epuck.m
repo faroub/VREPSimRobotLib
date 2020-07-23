@@ -30,18 +30,19 @@ classdef Epuck < DifferentialMobileRobot
     end
     
     methods  (Access = public)
-        function obj = Epuck(vrep, robotName)            
-
-            if nargin == 0
-
-                error ('Epuck object needs a VREPSim object to communicate with the V-REP simulator ')              
-   
-            else
-                % get V_REP simulation object
-                obj.m_vrepSim = vrep;
-                obj.m_vrep = obj.m_vrepSim.m_vrep;
-                obj.m_clientID = obj.m_vrepSim.m_clientID;
+        function obj = Epuck(vrep, epuckParams)            
+            
+            switch nargin
+                case 0
+                    error ('Epuck object needs a VREPSim object to communicate with the V-REP simulator ')              
+                case 1
+                    error ('Epuck object needs the robot''s parameters')              
             end
+            
+            % get V_REP simulation object
+            obj.m_vrepSim = vrep;
+            obj.m_vrep = obj.m_vrepSim.m_vrep;
+            obj.m_clientID = obj.m_vrepSim.m_clientID;
             
             % Epuck Kinematics parameters
             m_leftWheelRadius = 0.021; % m 
@@ -49,8 +50,8 @@ classdef Epuck < DifferentialMobileRobot
             m_wheelDistance = 0.053; % m
             
             % get joint handles
-            obj.m_leftJointHandle = getJointHandle(obj, 'ePuck_leftJoint', 'blocking');
-            obj.m_rightJointHandle = getJointHandle(obj, 'ePuck_rightJoint', 'blocking');
+            obj.m_leftJointHandle = getJointHandle(obj, epuckParams{1}, 'blocking');
+            obj.m_rightJointHandle = getJointHandle(obj, epuckParams{2}, 'blocking');
             
             
         end
@@ -59,7 +60,7 @@ classdef Epuck < DifferentialMobileRobot
         function out = getJointHandle(obj, objectName,operationMode)
             switch nargin
                 case 1
-                    error ('Argument objectName is required ') 
+                    error ('argument <1:objectName> is required ') 
                 case 2
                     operationMode = 'blocking';
             end
@@ -77,7 +78,7 @@ classdef Epuck < DifferentialMobileRobot
         function out = getJointPosition(obj, objectHandle, operationMode)
             switch nargin
                 case 1
-                    error ('Argument objectHandle is required ') 
+                    error ('argument <1:objectHandle> is required ') 
                 case 2
                     operationMode = 'buffer';
             end
@@ -101,10 +102,19 @@ classdef Epuck < DifferentialMobileRobot
                 case 2
                     operationMode = 'oneshot';
             end
-            obj.m_vrep.simxPauseCommunication(obj.m_clientID,1);
+            
+            pauseCommunication(obj.m_vrepSim,1);
             setJointSpeed(obj, speed, obj.m_leftJointHandle, operationMode);
             setJointSpeed(obj, speed, obj.m_rightJointHandle, operationMode);
-            obj.m_vrep.simxPauseCommunication(obj.m_clientID,0);
+            pauseCommunication(obj.m_vrepSim,0);
+            
+            if (obj.m_vrepSim.m_syncMode)
+                
+               sendSynchronousTrigger(obj.m_vrepSim);
+               getPingTime(obj.m_vrepSim);                
+               
+            end
+            
         end
 
 
@@ -121,11 +131,11 @@ classdef Epuck < DifferentialMobileRobot
             switch nargin
                 case 1
                     
-                    error ('Argument objectHandle is required ') 
+                    error ('arguments <1:speed> and <2:objectHandle> is required ') 
                     
                 case 2
                     
-                    error ('Argument objectHandle is required ') 
+                    error ('argument <2:objectHandle> is required ') 
 
                 case 3
                     operationMode = 'oneshot';
