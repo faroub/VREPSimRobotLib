@@ -6,6 +6,15 @@ classdef Epuck < DifferentialMobileRobot
     %   A Epuck object holds all information related to 
     %   the robot kinematics and dynamics parameters
     
+    properties (Constant)
+        
+        % Epuck Kinematics parameters
+        %rl = 0.021; % radius of left wheel [m]
+        %rr = 0.021; % radius of right wheel [m]
+        %l = 0.053; % distance of each wheel from the center between the two drive wheels [m]
+    
+    
+    end
     properties (Access = public)
 
 
@@ -20,102 +29,72 @@ classdef Epuck < DifferentialMobileRobot
     end
     
     properties (Access = private)
-
-        m_vrepSim = -1;
-        m_vrep = -1;
-        m_clientID = -1;
-        m_leftJointHandle = -1;
-        m_rightJointHandle = -1;
+        
+        vrepSimObj = -1; % V_REP simulation object               
+        jh_l = -1; % left joint handle
+        jh_r = -1; % right joint handle               
+        denc = [0 0]; % left and right wheels encoder increments [m]
         
     end
     
     methods  (Access = public)
-        function obj = Epuck(vrep, epuckParams)            
+        function obj = Epuck(vrepSimObj, epuckParams)            
             
             switch nargin
                 case 0
-                    error ('Epuck object needs a VREPSim object to communicate with the V-REP simulator ')              
+                    error ('argument <1:vrepSimObj> is required to communicate with the V-REP simulator ')              
                 case 1
-                    error ('Epuck object needs the robot''s parameters')              
+                    error ('argument <2:epuckParams> is required')              
             end
+            
+            obj@DifferentialMobileRobot();
             
             % get V_REP simulation object
-            obj.m_vrepSim = vrep;
-            obj.m_vrep = obj.m_vrepSim.m_vrep;
-            obj.m_clientID = obj.m_vrepSim.m_clientID;
-            
-            % Epuck Kinematics parameters
-            m_leftWheelRadius = 0.021; % m 
-            m_rightWheelRadius = 0.021; % m 
-            m_wheelDistance = 0.053; % m
-            
+            obj.vrepSimObj = vrepSimObj;
+                                  
             % get joint handles
-            obj.m_leftJointHandle = getJointHandle(obj, epuckParams{1}, 'blocking');
-            obj.m_rightJointHandle = getJointHandle(obj, epuckParams{2}, 'blocking');
+            obj.jh_l = getObjectHandle(obj.vrepSimObj,epuckParams{1}, 'blocking');
+            obj.jh_r = getObjectHandle(obj.vrepSimObj,epuckParams{2}, 'blocking');
             
-            
+
         end
         
-        
-        function out = getJointHandle(obj, objectName,operationMode)
+   
+
+        function move(obj,operationModes)
+            
             switch nargin
                 case 1
-                    error ('argument <1:objectName> is required ') 
+                    operationModes(1) = 'oneshot';
+                    operationModes(2) = 'oneshot';
                 case 2
-                    operationMode = 'blocking';
+                    operationModes(1) = 'oneshot';
+                    operationModes(2) = 'oneshot';
             end
             
-            [err_code,out]= obj.m_vrep.simxGetObjectHandle(obj.m_clientID,objectName,validateOperationMode(obj.m_vrepSim,operationMode));
+            % get joints positions feedback
+            obj.denc(1) = getJointPosition(obj,obj.jh_l, operationModes(1)*obj.r_l;
+            obj.denc(2) = getJointPosition(obj,obj.jh_r, operationModes(1)*obj.r_r;
             
-            while (err_code~= obj.m_vrep.simx_return_ok)  
+            
+            % compute the control law
+            
+            
+            % set desired velocity
+            pauseCommunication(obj.vrepSimObj,1);
+            setJointTargetVelocity(obj.vrepSimObj,vl, obj.jh_l, operationModes(2));
+            setJointTargetVelocity(obj.vrepSimObj,vr, obj.jh_r, operationModes(2));
+            pauseCommunication(obj.vrepSimObj,0);
+            
+            if (obj.vrepSimObj.syncMode)
                 
-                [err_code,out]= obj.m_vrep.simxGetObjectHandle(obj.m_clientID,objectName,validateOperationMode(obj.m_vrepSim,operationMode));
-
-            end 
-        end
-        
-        
-        function out = getJointPosition(obj, objectHandle, operationMode)
-            switch nargin
-                case 1
-                    error ('argument <1:objectHandle> is required ') 
-                case 2
-                    operationMode = 'buffer';
-            end
-            
-            [err_code,out] = obj.m_vrep.simxGetJointPosition(obj.m_clientID,objectHandle, validateOperationMode(obj.m_vrepSim,operationMode));
-            
-            while (err_code~= obj.m_vrep.simx_return_ok)  
-                
-                [err_code,out] = obj.m_vrep.simxGetJointPosition(obj.m_clientID,objectHandle, validateOperationMode(obj.m_vrepSim,operationMode));
-
-            end
-            
-        end
-        
-
-        function move(obj, speed, operationMode)
-            switch nargin
-                case 1
-                    speed = 0;
-                    operationMode = 'oneshot';
-                case 2
-                    operationMode = 'oneshot';
-            end
-            
-            pauseCommunication(obj.m_vrepSim,1);
-            setJointSpeed(obj, speed, obj.m_leftJointHandle, operationMode);
-            setJointSpeed(obj, speed, obj.m_rightJointHandle, operationMode);
-            pauseCommunication(obj.m_vrepSim,0);
-            
-            if (obj.m_vrepSim.m_syncMode)
-                
-               sendSynchronousTrigger(obj.m_vrepSim);
-               getPingTime(obj.m_vrepSim);                
+               sendSynchronousTrigger(obj.vrepSimObj);
+               getPingTime(obj.vrepSimObj);                
                
             end
             
         end
+        
 
 
     end
@@ -126,24 +105,16 @@ classdef Epuck < DifferentialMobileRobot
     
     methods  (Access = private)
         
-        function setJointSpeed(obj, speed, objectHandle, operationMode)
-            
-            switch nargin
-                case 1
-                    
-                    error ('arguments <1:speed> and <2:objectHandle> is required ') 
-                    
-                case 2
-                    
-                    error ('argument <2:objectHandle> is required ') 
-
-                case 3
-                    operationMode = 'oneshot';
-            end
-        
-            obj.m_vrep.simxSetJointTargetVelocity(obj.m_clientID,objectHandle,speed,validateOperationMode(obj.m_vrepSim,operationMode));			
+        function getFeedBack(obj,operationModes)
+        % get all possible sensor data available (encoder, proximity sensors, camera, ...)
             
         end
+        
+        function setFeedBack(obj,operationModes)
+        % get all possible sensor data available (encoder, proximity sensors, camera, ...)
+            
+        end
+
 
     end
     

@@ -12,10 +12,11 @@ classdef MobileRobot < handle
     end
     
     properties (Access = protected)
-  
-       m_positionX
-       m_positionY
-       m_orientation
+       
+       
+       pos % state pose vector : pos = [x y theta]
+       
+       dpos % delta state pose vector :  dpos = [dx dy dtheta]
         
     end
     
@@ -26,22 +27,32 @@ classdef MobileRobot < handle
     end
     
     methods  (Access = public)
-        function obj = DifferentialMobileRobot()
+        
+        function obj = MobileRobot()
             
 
             if nargin == 0
                 
+                obj.pos = [0 0 0];
+                obj.dpos = [0 0 0];
    
-            else
+            elseif nargin == 1
+                
+                obj.dpos = [0 0 0];
                 
             end
-
+            
+%             obj.pos = pos;
+%             obj.dpos = dpos;
+            
         end
 
     end
     methods (Access = protected)
+        
     end
     methods (Access = private)
+        
     end
     
 end

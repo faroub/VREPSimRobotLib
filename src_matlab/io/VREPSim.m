@@ -11,9 +11,10 @@ classdef VREPSim  < handle
     
     properties (Access = public)
 
-        m_clientID = -1;
-        m_vrep = -1;
-        m_syncMode = -1
+        clientID = -1;
+        vrepObj = -1;
+        syncMode = -1;
+        error_code
         
     end
     
@@ -26,12 +27,12 @@ classdef VREPSim  < handle
     properties (Access = private)
         
      
-        m_addressIP
-        m_portNumber
-        m_connectWait
-        m_reconnect
-        m_timeOut
-        m_dataCycle
+        addressIP
+        portNumber
+        connectWait
+        reconnect
+        timeOut
+        dataCycle
         
     end
 
@@ -43,53 +44,68 @@ classdef VREPSim  < handle
             if nargin == 0
                 
                 disp ('argument <1:simParams> must be provided. Default used: simParams = {''127.0.0.1'', 19997,true,true,5000,5}')
-                obj.m_addressIP = '127.0.0.1';
-                obj.m_portNumber = 19997;
-                obj.m_connectWait = true;
-                obj.m_reconnect = true;
-                obj.m_timeOut = 5000;
-                obj.m_dataCycle = 5;
+                obj.addressIP = '127.0.0.1';
+                obj.portNumber = 19997;
+                obj.connectWait = true;
+                obj.reconnect = true;
+                obj.timeOut = 5000;
+                obj.dataCycle = 5;
 
             else
-                obj.m_addressIP = simParams{1};
-                obj.m_portNumber = simParams{2};
-                obj.m_connectWait = simParams{3};
-                obj.m_reconnect = simParams{4};
-                obj.m_timeOut = simParams{5};
-                obj.m_dataCycle = simParams{6};
+                obj.addressIP = simParams{1};
+                obj.portNumber = simParams{2};
+                obj.connectWait = simParams{3};
+                obj.reconnect = simParams{4};
+                obj.timeOut = simParams{5};
+                obj.dataCycle = simParams{6};
             end
             % using the prototype file (remoteApiProto.m)
-            obj.m_vrep = remApi('remoteApi'); 
+            obj.vrepObj = remApi('remoteApi'); 
             
         end
         
         function out = openConnection(obj)
             
-            if (obj.m_clientID~=-1)
-                closeConnection(obj);
-            end
-            
-            obj.m_clientID = obj.m_vrep.simxStart(obj.m_addressIP,obj.m_portNumber,obj.m_connectWait,obj.m_reconnect,obj.m_timeOut,obj.m_dataCycle);           
-            out = obj.m_clientID;
+            % close previous connection if exist
+            closeConnection(obj);            
+            obj.clientID = obj.vrepObj.simxStart(obj.addressIP,obj.portNumber,obj.connectWait,obj.reconnect,obj.timeOut,obj.dataCycle);           
+            out = obj.clientID;
             disp('open communication thread');
             
         end
+        function closeAllConnections(obj)
+            
+            obj.vrepObj.simxFinish(-1); 
+            disp('close all communication threads');       
+        
+        end
         
         function closeConnection(obj)
-            
-            obj.m_vrep.simxFinish(obj.m_clientID); 
-            disp('close communication thread');            
+        
+            if (obj.clientID~=-1)
+                
+                obj.vrepObj.simxFinish(obj.clientID); 
+                disp('close communication thread');            
+                
+            else
+                
+                disp('no communication thread to close'); 
+                
+            end
             
         end
         
         function pauseCommunication(obj,enable)
+            
             if (enable)                
                 
-                obj.m_vrep.simxPauseCommunication(obj.m_clientID,1);
+                obj.error_code{1,1} = obj.vrepObj.simxPauseCommunication(obj.clientID,1);
+                obj.error_code{1,2}='pauseCommunication';
                 
             else
                 
-                obj.m_vrep.simxPauseCommunication(obj.m_clientID,0);
+                obj.error_code{1,1} = obj.vrepObj.simxPauseCommunication(obj.clientID,0);
+                obj.error_code{1,2}='pauseCommunication';
                 
             end
             
@@ -103,12 +119,14 @@ classdef VREPSim  < handle
             
             if (enable)
                 
-                obj.m_vrep.simxSynchronous(obj.m_clientID,true);
+                obj.error_code{2,1} = obj.vrepObj.simxSynchronous(obj.clientID,true);
+                obj.error_code{2,2} = 'enableSynchronousMode'; 
                 disp('enable synchronous operation mode');
                 
             else
                 
-                obj.m_vrep.simxSynchronous(obj.m_clientID,false);
+                obj.error_code{2,1} = obj.vrepObj.simxSynchronous(obj.clientID,false);
+                obj.error_code{2,2} = 'enableSynchronousMode'; 
                 disp('disable synchronous operation mode');
 
                 
@@ -127,18 +145,15 @@ classdef VREPSim  < handle
                 case 2
                     operationMode = 'oneshot';
             end
-
+           
+            obj.syncMode = enableSync;
             
             % enable synchronous mode
             enableSynchronousMode(obj,enableSync);
-            if (enableSync)
-                obj.m_syncMode = 1;
-            else
-                obj.m_syncMode = 0;
-            end
             
             % start simulation
-            obj.m_vrep.simxStartSimulation(obj.m_clientID,validateOperationMode(obj,operationMode));
+            obj.error_code{3,1} = obj.vrepObj.simxStartSimulation(obj.clientID,validateOperationMode(obj,operationMode));
+            obj.error_code{3,2} = 'startSimulation';
             disp('start V-REP simulation');
             
         end
@@ -149,7 +164,8 @@ classdef VREPSim  < handle
                  operationMode = 'blocking';
              end
              
-            obj.m_vrep.simxStopSimulation(obj.m_clientID,validateOperationMode(obj,operationMode));
+            obj.error_code{4,1} = obj.vrepObj.simxStopSimulation(obj.clientID,validateOperationMode(obj,operationMode));
+            obj.error_code{4,2} = 'stopSimulation';
             disp('stop V-REP simulation');
             
         end
@@ -160,26 +176,29 @@ classdef VREPSim  < handle
                  operationMode = 'oneshot';
             end
              
-            obj.m_vrep.simxPauseSimulation(obj.m_clientID,validateOperationMode(obj,operationMode));
+            obj.error_code{5,1} = obj.vrepObj.simxPauseSimulation(obj.clientID,validateOperationMode(obj,operationMode));
+            obj.error_code{5,2} = 'pauseSimulation';
             disp('pause V-REP simulation');
             
         end
         
         function out = getConnectionID(obj)
            
-            out = obj.m_vrep.simxGetConnectionId(obj.m_clientID);
+            out = obj.vrepObj.simxGetConnectionId(obj.clientID);
             
         end
       
-        function getPingTime(obj)
+        function out = getPingTime(obj)
            
-            obj.m_vrep.simxGetPingTime(obj.m_clientID);            
+             [obj.error_code{6,1},out] = obj.vrepObj.simxGetPingTime(obj.clientID);
+              obj.error_code{6,2} = 'getPingTime';
             
         end
         
         function sendSynchronousTrigger(obj)
            
-            obj.m_vrep.simxSynchronousTrigger(obj.m_clientID);            
+            obj.error_code{7,1} = obj.vrepObj.simxSynchronousTrigger(obj.clientID);
+            obj.error_code{7,2} = 'sendSynchronousTrigger';
             
         end
        
@@ -189,25 +208,113 @@ classdef VREPSim  < handle
                
                 switch operationMode
                     case 'oneshot'
-                        out =  obj.m_vrep.simx_opmode_oneshot;
+                        out =  obj.vrepObj.simx_opmode_oneshot;
                     case 'blocking'
-                        out =  obj.m_vrep.simx_opmode_blocking;
+                        out =  obj.vrepObj.simx_opmode_blocking;
                     case 'streaming'
-                        out =  obj.m_vrep.simx_opmode_streaming;
+                        out =  obj.vrepObj.simx_opmode_streaming;
                     case 'oneshot_split'
-                        out =  obj.m_vrep.simx_opmode_oneshot_split;       
+                        out =  obj.vrepObj.simx_opmode_oneshot_split;       
                     case 'streaming_split'
-                        out =  obj.m_vrep.simx_opmode_streaming_split;        
+                        out =  obj.vrepObj.simx_opmode_streaming_split;        
                     case 'discontinue'
-                        out =  obj.m_vrep.simx_opmode_discontinue;  
+                        out =  obj.vrepObj.simx_opmode_discontinue;  
                     case 'buffer'
-                        out =  obj.m_vrep.simx_opmode_buffer;  
+                        out =  obj.vrepObj.simx_opmode_buffer;  
                     case 'remove'
-                        out =  obj.m_vrep.simx_opmode_remove;                                   
+                        out =  obj.vrepObj.simx_opmode_remove;                                   
                 end
            else
-               error ('argument <1:operationMode> must be a member of this set : oneshot, blocking, streaming, oneshot_split, streaming_split, discontinue, buffer, remove')
+               error ('argument <1:operationMode> must be a member of this set : { oneshot, blocking, streaming, oneshot_split, streaming_split, discontinue, buffer, remove }')
            end
+        end
+        
+        
+        function out = getJointPosition(obj,objectHandle, operationMode)
+            
+            switch nargin
+                case 1
+                    error ('argument <1:objectHandle> is required ') 
+                case 2
+                    operationMode = 'buffer';
+            end
+            
+            [obj.error_code{8,1},out] = obj.vrepObj.simxGetJointPosition(obj.clientID,objectHandle, validateOperationMode(obj,operationMode));
+            obj.error_code{8,2} = 'getJointPosition';
+            while (obj.error_code{8,1}~= obj.vrepObj.simx_return_ok)  
+                
+                [obj.error_code{8,1},out] = obj.vrepObj.simxGetJointPosition(obj.clientID,objectHandle, validateOperationMode(obj,operationMode));
+
+            end
+            
+        end
+        
+        function setJointPosition(obj,objectHandle, position, operationMode)
+            
+            switch nargin
+                case 1
+                    error ('argument <1:objectHandle> is required ') 
+                case 2
+                    operationMode = 'oneshot';
+            end
+            
+            obj.error_code{9,1} = obj.vrepObj.simxSetJointPosition(obj.clientID,objectHandle, position, validateOperationMode(obj,operationMode));
+            obj.error_code{9,2} = 'setJointPosition';
+            
+            
+        end
+        
+        function out = setJointTargetPosition(obj,objectHandle, targetPosition, operationMode)
+            
+            switch nargin
+                case 1
+                    error ('argument <1:objectHandle> is required ') 
+                case 2
+                    operationMode = 'oneshot';
+            end
+            
+            obj.error_code{10,1} = obj.vrepObj.simxSetJointTargetPosition(obj.clientID,objectHandle, targetPosition, validateOperationMode(obj,operationMode));
+            obj.error_code{10,2} = 'setJointTargetPosition';
+            
+        end
+        
+        function setJointTargetVelocity(obj,speed, objectHandle, operationMode)
+            
+            switch nargin
+                case 1
+                    
+                    error ('arguments <1:speed> and <2:objectHandle> is required ') 
+                    
+                case 2
+                    
+                    error ('argument <2:objectHandle> is required ') 
+
+                case 3
+                    operationMode = 'oneshot';
+            end
+        
+             obj.error_code{11,1} = obj.vrepObj.simxSetJointTargetVelocity(obj.clientID,objectHandle,speed,validateOperationMode(obj,operationMode));			
+             obj.error_code{11,2} = 'setJointTargetVelocity';
+            
+        end
+        
+        function out = getObjectHandle(obj,objectName,operationMode)
+            
+            switch nargin
+                case 1
+                    error ('argument <1:objectName> is required ') 
+                case 2
+                    operationMode = 'blocking';
+            end
+            
+            [obj.error_code{12,1} ,out]= obj.vrepObj.simxGetObjectHandle(obj.clientID,objectName,validateOperationMode(obj,operationMode));
+            obj.error_code{12,2} = 'setJointTargetVelocity';
+            
+            while (obj.error_code{12,1}~= obj.vrepObj.simx_return_ok)  
+                
+                [obj.error_code{12,1},out]= obj.vrepObj.simxGetObjectHandle(obj.clientID,objectName,validateOperationMode(obj,operationMode));
+
+            end 
         end
         
         function delete(obj)
@@ -218,12 +325,14 @@ classdef VREPSim  < handle
             % close opened connections
             closeConnection(obj);
             % explicitely call the destructor!
-            obj.m_vrep.delete();
+            obj.vrepObj.delete();
             disp('VREPSim object deleted');
 
         end
             
     end
+    
+    
      
     methods (Access = protected)
         

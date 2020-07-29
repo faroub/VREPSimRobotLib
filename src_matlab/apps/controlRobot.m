@@ -18,36 +18,29 @@ simParams2 = {'127.0.0.2', 19990,true,true,5000,5};
 
 
 ObjVREP1 = VREPSim(simParams1);
-ObjVREP2 = VREPSim(simParams2);
+%ObjVREP2 = VREPSim(simParams2);
 
 
+%if ((openConnection(ObjVREP1)~=-1) && (openConnection(ObjVREP2)~=-1))
 
-
-
-
-
-
-
-
-
-
-if ((openConnection(ObjVREP1)~=-1) && (openConnection(ObjVREP2)~=-1))
+if (openConnection(ObjVREP1)~=-1)
         
     disp('connected to remote API server');  
    
     % instantiate Epuck object
     ObjEpuck1 = Epuck(ObjVREP1, epuckParams1);
-    ObjEpuck2 = Epuck(ObjVREP2, epuckParams2);
+    %ObjEpuck2 = Epuck(ObjVREP1, epuckParams2);
     
     % start simulation
     startSimulation(ObjVREP1,'blocking');
-    startSimulation(ObjVREP2,'blocking');
+    %startSimulation(ObjVREP2,'blocking');
     
     % while we are connected:
-    while ((getConnectionID(ObjVREP1)~=-1)&&(getConnectionID(ObjVREP2)~=-1)) 
+    %while ((getConnectionID(ObjVREP1)~=-1)&&(getConnectionID(ObjVREP2)~=-1)) 
+    while (getConnectionID(ObjVREP1)~=-1) 
        
-        move(ObjEpuck1, 5);
-        move(ObjEpuck2, 8);
+        move(ObjEpuck1, [1 3]);
+        %move(ObjEpuck2, 8);
 
 
     end

@@ -15,9 +15,11 @@ classdef DifferentialMobileRobot  < MobileRobot
     
     properties (Access = protected)
   
-        m_leftWheelRadius
-        m_rightWheelRadius
-        m_wheelDistance
+        v_l % left wheel velocity
+        v_r % right wheel velocity        
+        r_l % radius of left wheel
+        r_r % radius of right wheel
+        l % distance of each wheel from the center between the two drive wheels
         
     end
     
@@ -37,6 +39,7 @@ classdef DifferentialMobileRobot  < MobileRobot
             else
                 
             end
+            obj@MobileRobot();
 
         end
 
