@@ -33,13 +33,14 @@ classdef VREPSim  < handle
         reconnect
         timeOut
         dataCycle
+        stepTime
         
     end
 
     
     methods  (Access = public)
         
-        function obj = VREPSim(simParams)
+        function obj = VREPSim(simParams,stepTime)
             
             if nargin == 0
                 
@@ -50,17 +51,33 @@ classdef VREPSim  < handle
                 obj.reconnect = true;
                 obj.timeOut = 5000;
                 obj.dataCycle = 5;
-
-            else
+                obj.stepTime = 0.02;
+                
+            elseif nargin == 1
+                
                 obj.addressIP = simParams{1};
                 obj.portNumber = simParams{2};
                 obj.connectWait = simParams{3};
                 obj.reconnect = simParams{4};
                 obj.timeOut = simParams{5};
                 obj.dataCycle = simParams{6};
+                obj.stepTime = 0.02;
+                
+                
+            else
+                
+                obj.addressIP = simParams{1};
+                obj.portNumber = simParams{2};
+                obj.connectWait = simParams{3};
+                obj.reconnect = simParams{4};
+                obj.timeOut = simParams{5};
+                obj.dataCycle = simParams{6};
+                obj.stepTime =stepTime;
             end
             % using the prototype file (remoteApiProto.m)
             obj.vrepObj = remApi('remoteApi'); 
+            
+
             
         end
         
@@ -264,7 +281,7 @@ classdef VREPSim  < handle
             
         end
         
-        function out = setJointTargetPosition(obj,objectHandle, targetPosition, operationMode)
+        function setJointTargetPosition(obj,objectHandle, targetPosition, operationMode)
             
             switch nargin
                 case 1
@@ -308,13 +325,67 @@ classdef VREPSim  < handle
             end
             
             [obj.error_code{12,1} ,out]= obj.vrepObj.simxGetObjectHandle(obj.clientID,objectName,validateOperationMode(obj,operationMode));
-            obj.error_code{12,2} = 'setJointTargetVelocity';
+            obj.error_code{12,2} = 'getObjectHandle';
             
             while (obj.error_code{12,1}~= obj.vrepObj.simx_return_ok)  
                 
                 [obj.error_code{12,1},out]= obj.vrepObj.simxGetObjectHandle(obj.clientID,objectName,validateOperationMode(obj,operationMode));
 
             end 
+        end
+        
+        function setSimulationTimeStep(obj,stepTime,operationMode)
+            
+            switch nargin
+                case 1
+                    error ('argument <1:stepTime> is required ') 
+                case 2
+                    operationMode = 'oneshot';
+            end
+            
+            
+            [obj.error_code{13,1}]= obj.vrepObj.simxSetFloatingParameter(obj.clientID,obj.vrepObj.sim_floatparam_simulation_time_step,stepTime,validateOperationMode(obj,operationMode));
+            obj.error_code{13,2} = 'setSimulationTimeStep';
+
+        end
+        
+        function out = getObjectPosition(obj,objectHandle,parentHandle,operationMode)
+            
+            switch nargin
+                case 1
+                    error ('argument <1:objectHandle> and <2:parentHandle> is required ') 
+                case 2
+                     error ('argument <2:parentHandle> is required ') 
+                 case 3
+                    operationMode = 'buffer';
+            end
+            
+            [obj.error_code{14,1} ,out]= obj.vrepObj.simxGetObjectPosition(obj.clientID,objectHandle,parentHandle,validateOperationMode(obj,operationMode));
+            obj.error_code{14,2} = 'getObjectPosition';
+            
+            while (obj.error_code{14,1}~= obj.vrepObj.simx_return_ok)  
+                
+                [obj.error_code{14,1},out]= obj.vrepObj.simxGetObjectPosition(obj.clientID,objectHandle,parentHandle,validateOperationMode(obj,operationMode));
+
+            end 
+        end
+        
+        function setObjectPosition(obj,objectHandle,parentHandle,position,operationMode)
+            
+            switch nargin
+                case 1
+                    error ('argument <1:objectHandle> and <2:parentHandle> is required ') 
+                case 2
+                    error ('argument <2:parentHandle> is required ') 
+                case 3
+                    position = [0 0 0];
+                    operationMode = 'oneshot';
+            end
+            
+            
+            [obj.error_code{15,1}]= obj.vrepObj.simxSetObjectPosition(obj.clientID,objectHandle,parentHandle,position,validateOperationMode(obj,operationMode));
+            obj.error_code{15,2} = 'setObjectPosition';
+
         end
         
         function delete(obj)

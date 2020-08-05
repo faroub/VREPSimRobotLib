@@ -15,11 +15,10 @@ classdef DifferentialMobileRobot  < MobileRobot
     
     properties (Access = protected)
   
-        v_l % left wheel velocity
-        v_r % right wheel velocity        
-        r_l % radius of left wheel
-        r_r % radius of right wheel
-        l % distance of each wheel from the center between the two drive wheels
+        ds = 0; % overall linear displacement increment [m]
+        dtheta = 0; % heading direction increment [rad]
+        dx = 0; % delta x position 
+        dy = 0; % delta y position
         
     end
     
@@ -30,20 +29,36 @@ classdef DifferentialMobileRobot  < MobileRobot
     end
     
     methods  (Access = public)
-        function obj = DifferentialMobileRobot()
+        function obj = DifferentialMobileRobot(robotPose)
             
+            obj@MobileRobot(robotPose);
 
             if nargin == 0
-                
+
    
             else
                 
+                
+
+                
             end
-            obj@MobileRobot();
+
+        end
+        
+        function out=computeOdometry(obj,ds_l,ds_r)
+                    
+            obj.ds = (ds_l + ds_r)/2;
+            obj.dtheta = (ds_r - ds_l)/obj.l;
+            obj.dx = obj.ds * cos(obj.theta+(obj.dtheta/2));
+            obj.dy = obj.ds * sin(obj.theta+(obj.dtheta/2));                       
+            out = updatePose(obj,obj.dx,obj.dy,obj.dtheta);
+            
 
         end
 
+
     end
+    
     methods (Access = protected)
     end
     methods (Access = private)

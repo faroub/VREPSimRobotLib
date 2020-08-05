@@ -14,9 +14,9 @@ classdef MobileRobot < handle
     properties (Access = protected)
        
        
-       pos % state pose vector : pos = [x y theta]
-       
-       dpos % delta state pose vector :  dpos = [dx dy dtheta]
+       x = 0; % x position in global frame [m]
+       y = 0; % x position in global frame [m]
+       theta = 0;  % heading direction in global frame [rad]       
         
     end
     
@@ -28,24 +28,37 @@ classdef MobileRobot < handle
     
     methods  (Access = public)
         
-        function obj = MobileRobot()
+        function obj = MobileRobot(robotPose)
             
 
             if nargin == 0
                 
-                obj.pos = [0 0 0];
-                obj.dpos = [0 0 0];
-   
-            elseif nargin == 1
+                obj.x = 0;
+                obj.y = 0;
+                obj.theta = 0;
                 
-                obj.dpos = [0 0 0];
+   
+            else
+                
+                obj.x = robotPose(1);
+                obj.y = robotPose(2);
+                obj.theta = robotPose(3);
                 
             end
             
-%             obj.pos = pos;
-%             obj.dpos = dpos;
+ 
             
         end
+        
+        function out=updatePose(obj,dx,dy,dtheta)
+            
+            obj.x = obj.x + dx;
+            obj.y = obj.y + dy;
+            obj.theta = obj.theta + dtheta;   
+            out = [obj.x obj.y obj.theta]
+        
+        end
+        
 
     end
     methods (Access = protected)
