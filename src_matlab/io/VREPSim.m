@@ -13,8 +13,9 @@ classdef VREPSim  < handle
 
         clientID = -1;
         vrepObj = -1;
+        error_code = {};
+        stepTime = -1;
         syncMode = -1;
-        error_code
         
     end
     
@@ -27,24 +28,24 @@ classdef VREPSim  < handle
     properties (Access = private)
         
      
-        addressIP
-        portNumber
-        connectWait
-        reconnect
-        timeOut
-        dataCycle
-        stepTime
+        addressIP = -1;
+        portNumber = -1;
+        connectWait = -1;
+        reconnect = -1;
+        timeOut = -1;
+        dataCycle = -1;        
+        
         
     end
 
     
     methods  (Access = public)
         
-        function obj = VREPSim(simParams,stepTime)
+        function obj = VREPSim(simParams,stepTime,syncMode)
             
             if nargin == 0
                 
-                disp ('argument <1:simParams> must be provided. Default used: simParams = {''127.0.0.1'', 19997,true,true,5000,5}')
+                disp ('argument <1:simParams> and <1:stepTime> and <1:syncMode> should be provided. Default used: simParams = {''127.0.0.1'', 19997,true,true,5000,5} and stepTime=0.02 and syncMode = 1')
                 obj.addressIP = '127.0.0.1';
                 obj.portNumber = 19997;
                 obj.connectWait = true;
@@ -52,9 +53,9 @@ classdef VREPSim  < handle
                 obj.timeOut = 5000;
                 obj.dataCycle = 5;
                 obj.stepTime = 0.02;
-                
+                obj.syncMode = 1;
             elseif nargin == 1
-                
+                disp ('argument <1:stepTime> and <1:syncMode> should be provided. Default used: stepTime=0.02 and syncMode = 1')
                 obj.addressIP = simParams{1};
                 obj.portNumber = simParams{2};
                 obj.connectWait = simParams{3};
@@ -62,7 +63,18 @@ classdef VREPSim  < handle
                 obj.timeOut = simParams{5};
                 obj.dataCycle = simParams{6};
                 obj.stepTime = 0.02;
-                
+                obj.syncMode = 1;
+               
+            elseif nargin == 2
+                disp ('<1:syncMode> should be provided. Default used: syncMode = 1')
+                obj.addressIP = simParams{1};
+                obj.portNumber = simParams{2};
+                obj.connectWait = simParams{3};
+                obj.reconnect = simParams{4};
+                obj.timeOut = simParams{5};
+                obj.dataCycle = simParams{6};
+                obj.stepTime = stepTime;
+                obj.syncMode = 1;
                 
             else
                 
@@ -72,42 +84,37 @@ classdef VREPSim  < handle
                 obj.reconnect = simParams{4};
                 obj.timeOut = simParams{5};
                 obj.dataCycle = simParams{6};
-                obj.stepTime =stepTime;
+                obj.stepTime = stepTime;
+                obj.syncMode = syncMode;
             end
+            
             % using the prototype file (remoteApiProto.m)
             obj.vrepObj = remApi('remoteApi'); 
             
-
+            
             
         end
         
         function out = openConnection(obj)
             
             % close previous connection if exist
-            closeConnection(obj);            
+            %closeConnection(obj);            
             obj.clientID = obj.vrepObj.simxStart(obj.addressIP,obj.portNumber,obj.connectWait,obj.reconnect,obj.timeOut,obj.dataCycle);           
             out = obj.clientID;
-            disp('open communication thread');
             
         end
         function closeAllConnections(obj)
             
-            obj.vrepObj.simxFinish(-1); 
-            disp('close all communication threads');       
+            obj.vrepObj.simxFinish(-1);    
         
         end
         
         function closeConnection(obj)
         
-            if (obj.clientID~=-1)
+            if (obj.clientID > -1)
                 
                 obj.vrepObj.simxFinish(obj.clientID); 
-                disp('close communication thread');            
-                
-            else
-                
-                disp('no communication thread to close'); 
-                
+                    
             end
             
         end
@@ -118,11 +125,13 @@ classdef VREPSim  < handle
                 
                 obj.error_code{1,1} = obj.vrepObj.simxPauseCommunication(obj.clientID,1);
                 obj.error_code{1,2}='pauseCommunication';
+              
                 
             else
                 
                 obj.error_code{1,1} = obj.vrepObj.simxPauseCommunication(obj.clientID,0);
                 obj.error_code{1,2}='pauseCommunication';
+              
                 
             end
             
@@ -131,59 +140,71 @@ classdef VREPSim  < handle
         function enableSynchronousMode(obj,enable)
 
             if nargin == 1
+                
                  enable = 1;
+                 
             end
             
             if (enable)
-                
                 obj.error_code{2,1} = obj.vrepObj.simxSynchronous(obj.clientID,true);
                 obj.error_code{2,2} = 'enableSynchronousMode'; 
-                disp('enable synchronous operation mode');
-                
+              
             else
                 
                 obj.error_code{2,1} = obj.vrepObj.simxSynchronous(obj.clientID,false);
                 obj.error_code{2,2} = 'enableSynchronousMode'; 
-                disp('disable synchronous operation mode');
-
-                
+              
             end
             
         end
         
-        function startSimulation(obj,enableSync, operationMode)
+        function executeNextSimulationStep(obj)
+        
+            if (obj.syncMode)
+                sendSynchronousTrigger(obj);
+                getPingTime(obj);   
+            end
+        
+        end
+        
+        function setSimulationParameters(obj)
+            
+            if (obj.syncMode == 1) 
+                enableSynchronousMode(obj,1);
+            else
+                enableSynchronousMode(obj,0);
+            end
+
+                setSimulationTimeStep(obj,obj.stepTime);
+       
+        end
+        
+        function startSimulation(obj, operationMode)
              
             
-            switch nargin
-                case 1
-                    enableSync = 1;
-                    operationMode = 'oneshot';
-
-                case 2
+            if nargin == 1
                     operationMode = 'oneshot';
             end
-           
-            obj.syncMode = enableSync;
-            
-            % enable synchronous mode
-            enableSynchronousMode(obj,enableSync);
-            
+                                
             % start simulation
             obj.error_code{3,1} = obj.vrepObj.simxStartSimulation(obj.clientID,validateOperationMode(obj,operationMode));
             obj.error_code{3,2} = 'startSimulation';
             disp('start V-REP simulation');
+
             
         end
         
         function stopSimulation(obj,operationMode)
              
             if nargin == 1
-                 operationMode = 'blocking';
+                 operationMode = 'oneshot';
              end
              
+             
             obj.error_code{4,1} = obj.vrepObj.simxStopSimulation(obj.clientID,validateOperationMode(obj,operationMode));
-            obj.error_code{4,2} = 'stopSimulation';
+            obj.error_code{4,2} = 'stopSimulation';             
             disp('stop V-REP simulation');
+
             
         end
         
@@ -209,7 +230,6 @@ classdef VREPSim  < handle
            
              [obj.error_code{6,1},out] = obj.vrepObj.simxGetPingTime(obj.clientID);
               obj.error_code{6,2} = 'getPingTime';
-            
         end
         
         function sendSynchronousTrigger(obj)
@@ -246,7 +266,6 @@ classdef VREPSim  < handle
            end
         end
         
-        
         function out = getJointPosition(obj,objectHandle, operationMode)
             
             switch nargin
@@ -256,15 +275,24 @@ classdef VREPSim  < handle
                     operationMode = 'buffer';
             end
             
-            [obj.error_code{8,1},out] = obj.vrepObj.simxGetJointPosition(obj.clientID,objectHandle, validateOperationMode(obj,operationMode));
-            obj.error_code{8,2} = 'getJointPosition';
-            while (obj.error_code{8,1}~= obj.vrepObj.simx_return_ok)  
-                
-                [obj.error_code{8,1},out] = obj.vrepObj.simxGetJointPosition(obj.clientID,objectHandle, validateOperationMode(obj,operationMode));
-
-            end
+            switch operationMode                
+                case 'buffer'
+                     [obj.error_code{8,1},out] = obj.vrepObj.simxGetJointPosition(obj.clientID,objectHandle, validateOperationMode(obj,operationMode));
+                     while (obj.error_code{8,1}~=obj.vrepObj.simx_return_ok)                     
+                        [obj.error_code{8,1},out] = obj.vrepObj.simxGetJointPosition(obj.clientID,objectHandle, validateOperationMode(obj,operationMode));
+                     end                    
+                case 'streaming'                    
+                     [obj.error_code{8,1},out] = obj.vrepObj.simxGetJointPosition(obj.clientID,objectHandle, validateOperationMode(obj,operationMode));                    
+                     while (obj.error_code{8,1}~=obj.vrepObj.simx_return_ok)                     
+                        [obj.error_code{8,1},out] = obj.vrepObj.simxGetJointPosition(obj.clientID,objectHandle, validateOperationMode(obj,operationMode));
+                     end    
             
+            end            
+
+            obj.error_code{8,2} = 'getJointPosition';
+           
         end
+        
         
         function setJointPosition(obj,objectHandle, position, operationMode)
             
@@ -292,10 +320,11 @@ classdef VREPSim  < handle
             
             obj.error_code{10,1} = obj.vrepObj.simxSetJointTargetPosition(obj.clientID,objectHandle, targetPosition, validateOperationMode(obj,operationMode));
             obj.error_code{10,2} = 'setJointTargetPosition';
+
             
         end
         
-        function setJointTargetVelocity(obj,speed, objectHandle, operationMode)
+        function setJointTargetVelocity(obj,objectHandle,speed,operationMode)
             
             switch nargin
                 case 1
@@ -312,6 +341,7 @@ classdef VREPSim  < handle
         
              obj.error_code{11,1} = obj.vrepObj.simxSetJointTargetVelocity(obj.clientID,objectHandle,speed,validateOperationMode(obj,operationMode));			
              obj.error_code{11,2} = 'setJointTargetVelocity';
+
             
         end
         
@@ -327,11 +357,6 @@ classdef VREPSim  < handle
             [obj.error_code{12,1} ,out]= obj.vrepObj.simxGetObjectHandle(obj.clientID,objectName,validateOperationMode(obj,operationMode));
             obj.error_code{12,2} = 'getObjectHandle';
             
-            while (obj.error_code{12,1}~= obj.vrepObj.simx_return_ok)  
-                
-                [obj.error_code{12,1},out]= obj.vrepObj.simxGetObjectHandle(obj.clientID,objectName,validateOperationMode(obj,operationMode));
-
-            end 
         end
         
         function setSimulationTimeStep(obj,stepTime,operationMode)
@@ -347,6 +372,7 @@ classdef VREPSim  < handle
             [obj.error_code{13,1}]= obj.vrepObj.simxSetFloatingParameter(obj.clientID,obj.vrepObj.sim_floatparam_simulation_time_step,stepTime,validateOperationMode(obj,operationMode));
             obj.error_code{13,2} = 'setSimulationTimeStep';
 
+
         end
         
         function out = getObjectPosition(obj,objectHandle,parentHandle,operationMode)
@@ -360,14 +386,21 @@ classdef VREPSim  < handle
                     operationMode = 'buffer';
             end
             
-            [obj.error_code{14,1} ,out]= obj.vrepObj.simxGetObjectPosition(obj.clientID,objectHandle,parentHandle,validateOperationMode(obj,operationMode));
-            obj.error_code{14,2} = 'getObjectPosition';
+            switch operationMode                
+                case 'buffer'
+                     [obj.error_code{14,1},out] = obj.vrepObj.simxGetObjectPosition(obj.clientID,objectHandle, parentHandle, validateOperationMode(obj,operationMode));
+                     while (obj.error_code{14,1}~=obj.vrepObj.simx_return_ok)                     
+                        [obj.error_code{14,1},out] = obj.vrepObj.simxGetObjectPosition(obj.clientID,objectHandle, parentHandle, validateOperationMode(obj,operationMode));
+                     end                    
+                case 'streaming'                    
+                     [obj.error_code{14,1},out] = obj.vrepObj.simxGetObjectPosition(obj.clientID,objectHandle, parentHandle, validateOperationMode(obj,operationMode));                    
+                     while (obj.error_code{14,1}~=obj.vrepObj.simx_return_ok)                     
+                        [obj.error_code{14,1},out] = obj.vrepObj.simxGetObjectPosition(obj.clientID,objectHandle, parentHandle, validateOperationMode(obj,operationMode));
+                     end    
             
-            while (obj.error_code{14,1}~= obj.vrepObj.simx_return_ok)  
-                
-                [obj.error_code{14,1},out]= obj.vrepObj.simxGetObjectPosition(obj.clientID,objectHandle,parentHandle,validateOperationMode(obj,operationMode));
-
-            end 
+            end                         
+            obj.error_code{14,2} = 'getObjectPosition';            
+            
         end
         
         function setObjectPosition(obj,objectHandle,parentHandle,position,operationMode)
@@ -386,13 +419,59 @@ classdef VREPSim  < handle
             [obj.error_code{15,1}]= obj.vrepObj.simxSetObjectPosition(obj.clientID,objectHandle,parentHandle,position,validateOperationMode(obj,operationMode));
             obj.error_code{15,2} = 'setObjectPosition';
 
+
+        end
+        
+        function setObjectOrientation(obj,objectHandle,parentHandle,eulerAngles,operationMode)
+            switch nargin
+                case 1
+                    error ('argument <1:objectHandle> and <2:parentHandle> is required ') 
+                case 2
+                    error ('argument <2:parentHandle> is required ') 
+                case 3
+                    eulerAngles = [0 0 0];
+                    operationMode = 'oneshot';
+            end
+            
+            
+            [obj.error_code{16,1}]= obj.vrepObj.simxSetObjectPosition(obj.clientID,objectHandle,parentHandle,eulerAngles,validateOperationMode(obj,operationMode));
+            obj.error_code{16,2} = 'setObjectOrientation';
+        
+        end
+
+        function out = getObjectOrientation(obj,objectHandle,parentHandle,operationMode)
+            
+            switch nargin
+                case 1
+                    error ('argument <1:objectHandle> and <2:parentHandle> is required ') 
+                case 2
+                     error ('argument <2:parentHandle> is required ') 
+                 case 3
+                    operationMode = 'buffer';
+            end
+            
+            switch operationMode                
+                case 'buffer'
+                     [obj.error_code{17,1},out] = obj.vrepObj.simxGetObjectOrientation(obj.clientID,objectHandle, parentHandle, validateOperationMode(obj,operationMode));
+                     while (obj.error_code{17,1}~=obj.vrepObj.simx_return_ok)                     
+                        [obj.error_code{17,1},out] = obj.vrepObj.simxGetObjectOrientation(obj.clientID,objectHandle, parentHandle, validateOperationMode(obj,operationMode));
+                     end                    
+                case 'streaming'                    
+                     [obj.error_code{17,1},out] = obj.vrepObj.simxGetObjectOrientation(obj.clientID,objectHandle, parentHandle, validateOperationMode(obj,operationMode));                    
+                     while (obj.error_code{17,1}~=obj.vrepObj.simx_return_ok)                     
+                        [obj.error_code{17,1},out] = obj.vrepObj.simxGetObjectOrientation(obj.clientID,objectHandle, parentHandle, validateOperationMode(obj,operationMode));
+                     end    
+            
+            end                         
+            obj.error_code{17,2} = 'getObjectOrientation';            
+            
         end
         
         function delete(obj)
-            % make sure that the last command sent out had time to arrive
-            getPingTime(obj);    
-            % stop vrep simulation
-            stopSimulation(obj);   
+           % make sure that the last command sent out had time to arrive
+           getPingTime(obj);    
+           % stop vrep simulation
+            stopSimulation(obj,'blocking');   
             % close opened connections
             closeConnection(obj);
             % explicitely call the destructor!
