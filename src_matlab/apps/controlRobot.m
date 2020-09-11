@@ -46,7 +46,7 @@ if (openConnection(ObjSceneSim)~=-1)
     setSimulationParameters(ObjSceneSim);
 
     % instantiate Epuck object
-    ObjEpuck1 = Epuck(ObjSceneSim, epuck1Params,robotState);
+    ObjEpuck1 = Epuck(ObjSceneSim, epuck1Params);
     %ObjEpuck2 = Epuck(ObjEpuck2Sim, epuck2Params,robotPose);
     
     % start simulation
@@ -64,7 +64,7 @@ if (openConnection(ObjSceneSim)~=-1)
         % controller 
         
         % moves robot and gets control inputes and outputs current pose of the robot
-        robotState = move(ObjEpuck1,0.1,0);
+        robotState = move(ObjEpuck1,0.1,0)
         %robotPose = move(ObjEpuck2, [5 5]);
 
         % executed only when synchronous  mode enables

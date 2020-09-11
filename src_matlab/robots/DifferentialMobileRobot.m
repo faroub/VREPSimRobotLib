@@ -4,7 +4,14 @@ classdef DifferentialMobileRobot  < MobileRobot
     %   A DifferentialMobileRobot object holds all information related to 
     %   a differential mobile robot kinematics and dynamics parameters
     
+    properties (Constant)
+        
+        rad2deg = 180/pi; % conversion radian to degrees
+        deg2rad = pi/180; % conversion degrees to radian 
 
+      
+    
+    end
     
    
     properties (Access = protected)
@@ -17,7 +24,10 @@ classdef DifferentialMobileRobot  < MobileRobot
 
 
         robotState = [0;0;0] % robot state     
+        robotVelocityEgo = [0;0;0]; % robot velocity in egocentric frame 
+        robotVelocityAllo = [0;0;0]; % robot velocity in allocentric frame 
         stepTime = -1;% step time [s]
+       
         
 
         
@@ -25,42 +35,71 @@ classdef DifferentialMobileRobot  < MobileRobot
     
 
     methods  (Access = public)
-
-        function obj = DifferentialMobileRobot(stepTime,robotState)
-            
-            obj.stepTime = stepTime;
-            obj.robotState = robotState;
-
-        end
-        
-
-
+     
 
     end
     
     methods (Access = protected)
         
+        function setRobotVelocityEgo(obj,robotVelocityEgo)
+            
+            obj.robotVelocityEgo = robotVelocityEgo;
+        
+        end
+        
+        function out=getRobotVelocityEgo(obj)
+            
+            out=obj.robotVelocityEgo;
+        
+        end
+        function setRobotVelocityAllo(obj,robotVelocityAllo)
+            
+            obj.robotVelocityAllo = robotVelocityAllo;
+        
+        end
+        
+        function out=getRobotVelocityAllo(obj)
+            
+            out=obj.robotVelocityAllo;
+        
+        end
        
-        function out=computeForwardKinematics(obj,robotVelocityEgo)
+        function computeForwardKinematics(obj)
             
-            out=rotz(obj.robotState(3))*robotVelocityEgo;
+            obj.robotVelocityAllo = rotz(obj.robotState(3)*obj.rad2deg)*obj.robotVelocityEgo;
         
         end
         
-        function out=computeInverseKinematics(obj,robotVelocityAllo)
+        function computeInverseKinematics(obj)
             
-            out=rotz(obj.robotState(3))\robotVelocityAllo;
+            obj.robotVelocityEgo = rotz(obj.robotState(3)*obj.rad2deg)\obj.robotVelocityAllo;
         
         end
         
-        function out=updateState(obj)
+        function updateRobotState(obj)
             
-            obj.robotState(1) = obj.robotState(1) + *obj.stepTime;
-            obj.robotState(2) = obj.robotState(2) + *obj.stepTime;
-            obj.robotState(3) = obj.robotState(3) + *obj.stepTime;
+            obj.robotState(1) = obj.robotState(1) + obj.robotVelocityAllo(1)*obj.stepTime;
+            obj.robotState(2) = obj.robotState(2) + obj.robotVelocityAllo(2)*obj.stepTime;
+            obj.robotState(3) = obj.robotState(3) + obj.robotVelocityAllo(3)*obj.stepTime;
+                   
+        end
+        
+        function out=getRobotState(obj)
             
             out = obj.robotState;
+                   
+        end
         
+        function setRobotState(obj,robotState)
+            
+            obj.robotState = robotState;
+                   
+        end
+        
+        function setStepTime(obj,stepTime)
+            
+            obj.stepTime = stepTime;
+                   
         end
         
         
