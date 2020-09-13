@@ -467,6 +467,19 @@ classdef VREPSim  < handle
             
         end
         
+        function out=getSimulationTimeStep(obj,operationMode)
+            
+            if nargin == 1
+                operationMode = 'blocking';
+            end
+            
+            
+            [obj.error_code{18,1},out]= obj.vrepObj.simxGetFloatingParameter(obj.clientID,obj.vrepObj.sim_floatparam_simulation_time_step,validateOperationMode(obj,operationMode));
+            obj.error_code{18,2} = 'getSimulationTimeStep';
+
+
+        end
+        
         function delete(obj)
            % make sure that the last command sent out had time to arrive
            getPingTime(obj);    
