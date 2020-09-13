@@ -43,6 +43,7 @@ classdef Epuck < DifferentialMobileRobot
         ds_o_r % right previous delta distance [m]
         stepTime = -1;% step time [s]
         
+        
        
         
        
@@ -65,25 +66,24 @@ classdef Epuck < DifferentialMobileRobot
                     out_pos = getObjectPosition(obj.vrepSimObj,obj.rh,-1, 'streaming');
                     % get robot orientation
                     out_orient = getObjectOrientation(obj.vrepSimObj,obj.rh,-1,'streaming');                    
-                   % set robot state
+                   % get robot state
                    robotState = [double(out_pos(1));double(out_pos(2));double(out_orient(3))];
-                    setRobotState(obj,robotState);
-                    % set step time
-                    obj.stepTime =  obj.vrepSimObj.stepTime;
-                    % set step time
-                    setStepTime(obj,obj.stepTime);
+ 
                     
                 case 3
                     % get V_REP simulation object
                     obj.vrepSimObj = vrepSimObj;
-                    % set robot state
-                    setRobotState(obj,robotState);
-                    % set step time
-                    obj.stepTime =  obj.vrepSimObj.stepTime;
-                    % set step time
-                    setStepTime(obj,obj.stepTime);
             end
-                                                                        
+                                       
+           % get robot handle
+           obj.rh = getObjectHandle(obj.vrepSimObj,epuckParams{1},'blocking');
+           
+            % get robot position
+            getObjectPosition(obj.vrepSimObj,obj.rh,-1, 'streaming');
+            
+            % get robot orientation
+            getObjectOrientation(obj.vrepSimObj,obj.rh,-1,'streaming');   
+           
             % get joint handles
             obj.jh_l = getObjectHandle(obj.vrepSimObj,epuckParams{2},'blocking');
             obj.jh_r = getObjectHandle(obj.vrepSimObj,epuckParams{3},'blocking');
@@ -104,8 +104,12 @@ classdef Epuck < DifferentialMobileRobot
             obj.ds_o_l = getJointPosition(obj.vrepSimObj,obj.jh_l,'streaming')*obj.r_l;
             obj.ds_o_r = getJointPosition(obj.vrepSimObj,obj.jh_r,'streaming')*obj.r_r;      
             
-            
-
+            % set robot state
+            setRobotState(obj,robotState);
+            % get step time
+            obj.stepTime =  getSimulationTimeStep(obj.vrepSimObj,'blocking');
+            % set step time
+            setStepTime(obj,obj.stepTime);
            
                   
         end
@@ -145,14 +149,6 @@ classdef Epuck < DifferentialMobileRobot
             
         end
         
-       function delete(obj)
-             disp('delete ePuck')
-             getJointPosition(obj.vrepSimObj,obj.jh_l, 'discontinue');
-             getPingTime(obj.vrepSimObj);  
-             getJointPosition(obj.vrepSimObj,obj.jh_r, 'discontinue');            
-             getPingTime(obj.vrepSimObj);  
-                                
-       end
        function  setSpeed(obj,v_w)
             
             if nargin == 1                
@@ -177,17 +173,32 @@ classdef Epuck < DifferentialMobileRobot
             obj.jp_o_r = obj.jp_n_r;
         
        end
+       
+
          
-        function out=getDeltaDistance(obj)
+        function out=getSimRobotState(obj)
             
-            obj.ds_n_l = getJointPosition(obj.vrepSimObj,obj.jh_l,'buffer')*obj.r_l;
-            obj.ds_n_r = getJointPosition(obj.vrepSimObj,obj.jh_r,'buffer')*obj.r_r;            
-            out(1) = obj.ds_n_l - obj.ds_o_l;
-            out(2) = obj.ds_n_r - obj.ds_o_r; 
-            obj.ds_o_l = obj.ds_n_l;
-            obj.ds_o_r = obj.ds_n_r;            
+            % get robot position
+            out_pos = getObjectPosition(obj.vrepSimObj,obj.rh,-1, 'buffer');
+            % get robot orientation
+            out_orient = getObjectOrientation(obj.vrepSimObj,obj.rh,-1,'buffer');                    
+            % set robot state
+            out = [double(out_pos(1));double(out_pos(2));double(out_orient(3))];
             
         end
+        
+        function delete(obj)
+             disp('Delete ePuck')
+             getObjectPosition(obj.vrepSimObj,obj.rh,-1, 'discontinue');
+             getPingTime(obj.vrepSimObj);  
+             getObjectOrientation(obj.vrepSimObj,obj.rh,-1,'discontinue');           
+             getPingTime(obj.vrepSimObj);              
+             getJointPosition(obj.vrepSimObj,obj.jh_l, 'discontinue');
+             getPingTime(obj.vrepSimObj);  
+             getJointPosition(obj.vrepSimObj,obj.jh_r, 'discontinue');            
+             getPingTime(obj.vrepSimObj);  
+                                
+       end
        
     end
     
