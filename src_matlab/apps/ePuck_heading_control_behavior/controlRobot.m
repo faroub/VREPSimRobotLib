@@ -38,7 +38,7 @@ if (openConnection(ObjSceneSim)~=-1)
     setSimulationParameters(ObjSceneSim);
        
     % instantiate Epuck object
-    ObjePuck1 = Epuck(ObjePuck1Sim, ePuck1Params,robotState);
+    ObjePuck1 = ePuck(ObjePuck1Sim, ePuck1Params,robotState);
 
     
     % start simulation
