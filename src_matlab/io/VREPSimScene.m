@@ -156,7 +156,7 @@ classdef VREPSimScene  < handle
             
         end
         
-        function executeNextSimulationStep(obj)
+        function execSimStep(obj)
         
             if (obj.syncMode)
                 sendSynchronousTrigger(obj);
