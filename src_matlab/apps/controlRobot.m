@@ -12,31 +12,23 @@ syncMode = true;
 % robot state
 robotState=zeros(3, 1);
 
-
-% instantiate VREP simulation scene object
+% default api server parameters
 sceneSimParams = {'127.0.0.1', 19997,true,true,5000,5};
+
+% instantiate VREP simulation scene object using the default api server
 ObjSceneSim = VREPSimScene(sceneSimParams,stepTime,syncMode);
 
 % load simulation scene
-loadScene(ObjSceneSim,'/home/faroub/Documents/development-projects/projects-matlab/vrep-projects/robotic-framework/src_vrep/test_scene.ttt',0);
+loadScene(ObjSceneSim,'/home/faroub/Documents/development-projects/projects-matlab/vrep-projects/robotic-framework/src_vrep/differential_robot_behavior_based_controller.ttt',0);
 
+% ePuck parameters
+ePuck1Params = {'ePuck', 'ePuck_leftJoint', 'ePuck_rightJoint'};
 
-
-% robot parameters
-epuck1Params = {'ePuck', 'ePuck_leftJoint', 'ePuck_rightJoint'};
-
-epuck2Params = {'ePuck0','ePuck_leftJoint0', 'ePuck_rightJoint0'};
-
+% ePuck simulation parameters
+ePuck1SimParams = {'127.0.0.1', 19992,true,true,5000,5};
 
 % instantiate VREPSim object
-epuck1SimParams = {'127.0.0.1', 19992,true,true,5000,5};
-
-epuck2SimParams = {'127.0.0.2', 19993,true,true,5000,5};
-
-
-ObjEpuck1Sim = VREPSimRobot(epuck1SimParams);
-ObjEpuck2Sim = VREPSimRobot(epuck2SimParams);
-
+ObjePuck1Sim = VREPSimRobot(ePuck1SimParams);
 
 if (openConnection(ObjSceneSim)~=-1)
         
@@ -44,12 +36,10 @@ if (openConnection(ObjSceneSim)~=-1)
     
     % set simulation parameters : step time and synchronous mode                
     setSimulationParameters(ObjSceneSim);
-    
-    
-
+       
     % instantiate Epuck object
-    ObjEpuck1 = Epuck(ObjEpuck1Sim, epuck1Params,robotState);
-    ObjEpuck2 = Epuck(ObjEpuck2Sim, epuck2Params);
+    ObjePuck1 = Epuck(ObjePuck1Sim, ePuck1Params,robotState);
+
     
     % start simulation
     startSimulation(ObjSceneSim,'blocking');
@@ -66,14 +56,12 @@ if (openConnection(ObjSceneSim)~=-1)
         % controller 
         
         % moves robot and gets control inputes and outputs current pose of the robot
-        robotState = move(ObjEpuck1,0.1,0)
-        robotState = move(ObjEpuck2,0.1,0)
-        
-        rssim=getSimRobotState(ObjEpuck1);
-        %robotPose = move(ObjEpuck2, [5 5]);
+        robotState = move(ObjePuck1,0.1,0);
+
 
         % executed only when synchronous  mode enables
-        executeNextSimulationStep(ObjSceneSim);
+        execSimStep(ObjSceneSim);
+        
     end
     
     disp('program ended');
