@@ -131,6 +131,7 @@ classdef ePuck < DifferentialMobileRobot
               
             % set robot velocity in ego frame
             robotVelocityEgo = [(obj.r_l*v_w(1)+obj.r_r*v_w(2))/2;0;(obj.r_r*v_w(2)-obj.r_l*v_w(1))/obj.l];
+            
             setRobotVelocityEgo(obj,robotVelocityEgo) 
              
             % compute forward kinematics
