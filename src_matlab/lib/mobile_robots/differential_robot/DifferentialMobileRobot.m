@@ -23,10 +23,10 @@ classdef DifferentialMobileRobot  < MobileRobot
     properties (Access = private)
 
 
-        robotState = [0;0;0] % robot state     
-        robotVelocityEgo = [0;0;0]; % robot velocity in egocentric frame 
-        robotVelocityAllo = [0;0;0]; % robot velocity in allocentric frame 
-        stepTime = -1;% step time [s]
+        robotState % robot state     
+        robotVelocityEgo % robot velocity in egocentric frame 
+        robotVelocityAllo % robot velocity in allocentric frame 
+        stepTime % step time [s]
        
         
 
