@@ -11,9 +11,7 @@ classdef VREPSimRobot  < handle
     
     properties (Access = public)
 
-        clientID = -1;
-        vrepObj = -1;
-        error_code = {};
+
         
     end
     
@@ -26,12 +24,15 @@ classdef VREPSimRobot  < handle
     properties (Access = private)
         
      
-        addressIP = -1;
-        portNumber = -1;
-        connectWait = -1;
-        reconnect = -1;
-        timeOut = -1;
-        dataCycle = -1;        
+        addressIP
+        portNumber
+        connectWait
+        reconnect
+        timeOut
+        dataCycle
+        clientID
+        vrepObj
+        error_code
         
         
     end
