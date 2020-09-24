@@ -11,11 +11,7 @@ classdef VREPSimScene  < handle
     
     properties (Access = public)
 
-        clientID = -1;
-        vrepObj = -1;
-        error_code = {};
-        stepTime = -1;
-        syncMode = -1;
+
         
     end
     
@@ -28,12 +24,17 @@ classdef VREPSimScene  < handle
     properties (Access = private)
         
      
-        addressIP = -1;
-        portNumber = -1;
-        connectWait = -1;
-        reconnect = -1;
-        timeOut = -1;
-        dataCycle = -1;        
+        addressIP
+        portNumber
+        connectWait
+        reconnect
+        timeOut
+        dataCycle 
+        clientID
+        vrepObj
+        error_code
+        stepTime
+        syncMode
         
         
     end
@@ -397,6 +398,23 @@ classdef VREPSimScene  < handle
             obj.error_code{18,2} = 'getSimulationTimeStep';
 
 
+        end
+        
+        function loadScene(obj,scenePathAndName,location, operationMode)
+            
+            switch nargin
+                case 1
+                    error ('argument <1:scenePathAndName> is required ') 
+                case 2
+                    location = 0;
+                case 3
+                    operationMode = 'blocking';
+            end
+            
+            [obj.error_code{19,1}]= obj.vrepObj.simxLoadScene(obj.clientID,scenePathAndName,location,validateOperationMode(obj,operationMode));
+            obj.error_code{19,2} = 'loadScene';
+        
+        
         end
         
         function delete(obj)
