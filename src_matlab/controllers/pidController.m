@@ -31,19 +31,12 @@ classdef pidController < handle
 
         end
         
-        function out = compute(obj,refSignal,sysSignal) 
+        function out = compute(obj,error) 
             
-            switch nargin
-                case 1
-                    refSignal = 0;
-                    sysSignal = 0;
-                case 2
-                    sysSignal = 0;
+            if nargin == 1
+                error = 0;
             end
-
-            % error signal
-            error = refSignal - sysSignal;
-
+            
             % proportional term
             pout = obj.kp * error;
 
@@ -78,13 +71,12 @@ classdef pidController < handle
     
         function out = checkLimits(obj, controlSignal) 
                        
-            if controlSignal>obj.max
-                
+            if controlSignal>obj.max                
                 out = obj.max;
-
-            elseif controlSignal<obj.min
-            
+            elseif controlSignal<obj.min            
                 out = obj.min;
+            else
+                out = controlSignal;
             end
                 
         end
