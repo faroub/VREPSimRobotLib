@@ -42,6 +42,11 @@ classdef VREPSimRobot  < handle
         
         function obj = VREPSimRobot(simParams)
             
+            % todo: include the posibility to pass a VREPSimScene object as
+            % argument
+            % TODO: check if connection already established before
+            % attempting it
+            % Fixme: Is the area of hemisphere as below?
             switch nargin
                 case 0                 
                     error ('argument <1:simParams> must be provided')
@@ -59,15 +64,23 @@ classdef VREPSimRobot  < handle
             % using the prototype file (remoteApiProto.m)
             obj.vrepObj = remApi('remoteApi'); 
             
-            % open connection 
-            if (openConnection(obj)==-1)
-                error ('VREPSimRobot: connection to the server [IP %s, Port: %d] was not possible', obj.addressIP,obj.portNumber)              
-            else
-                disp ('VREPSimRobot: connection to the server established')                
-            end
 
+            % open connection 
+%             if (Connected(obj))
+%                                 
+%                 msg = ['VREPSimRobot: already connected to remote API server [',obj.addressIP,num2str( obj.portNumber),']'];
+%                 disp(msg)   
+% 
+%             else
+                
+                if (openConnection(obj)==-1)
+                    error ('VREPSimRobot: connection to remote API server [IP: %s, Port: %d] was not possible', obj.addressIP,obj.portNumber)              
+                else
+                    msg = ['VREPSimRobot: connection to remote API server [',obj.addressIP,num2str( obj.portNumber),'] established'];
+                    disp(msg)   
+                end
             
-            
+        %end
             
         end
         
@@ -86,12 +99,20 @@ classdef VREPSimRobot  < handle
         
         function closeConnection(obj)
         
-            if (obj.clientID > -1)
+            if (obj.clientID ~= -1)
                 
                 obj.vrepObj.simxFinish(obj.clientID); 
                     
             end
             
+        end
+        function out= Connected(obj)
+             if (obj.clientID ~= -1)
+                out = 1;
+             else
+                 out = 0;
+             end
+        
         end
         
         function pauseCommunication(obj,enable)

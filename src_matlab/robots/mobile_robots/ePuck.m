@@ -1,4 +1,4 @@
-classdef ePuck < DifferentialMobileRobot
+classdef ePuck < DifferentialDrive
     %   Epuck: is an Epuck simulation object
     %   This class handles the interface to the V-REP simulator and 
     %   low-level object handle operations for the Epuck mobile robot
@@ -29,7 +29,7 @@ classdef ePuck < DifferentialMobileRobot
     
     properties (Access = private)
         
-        vrepSimObj = -1; % V_REP simulation object     
+        vrepObj = -1; % V_REP simulation object     
         rh = -1; % robot handle
         jh_l = -1; % left joint handle
         jh_r = -1; % right joint handle                  
@@ -50,7 +50,7 @@ classdef ePuck < DifferentialMobileRobot
     end
     
     methods  (Access = public)
-        function obj = ePuck(vrepSimObj, epuckParams,robotState)            
+        function obj = ePuck(vrepObj, epuckParams,robotState)            
                      
             switch nargin
                 case 0
@@ -59,55 +59,55 @@ classdef ePuck < DifferentialMobileRobot
                     error ('argument <2:epuckParams> is required')
                 case 2
                     % get V_REP simulation object
-                    obj.vrepSimObj = vrepSimObj;
+                    obj.vrepSimObj = vrepObj;
                     % get robot handle
-                    obj.rh = getObjectHandle(obj.vrepSimObj,epuckParams{1},'blocking');
+                    obj.rh = getObjectHandle(obj.vrepObj,epuckParams{1},'blocking');
                     % get robot position
-                    out_pos = getObjectPosition(obj.vrepSimObj,obj.rh,-1, 'streaming');
+                    out_pos = getObjectPosition(obj.vrepObj,obj.rh,-1, 'streaming');
                     % get robot orientation
-                    out_orient = getObjectOrientation(obj.vrepSimObj,obj.rh,-1,'streaming');                    
+                    out_orient = getObjectOrientation(obj.vrepObj,obj.rh,-1,'streaming');                    
                    % get robot state
                    robotState = [double(out_pos(1));double(out_pos(2));double(out_orient(3))];
  
                     
                 case 3
                     % get V_REP simulation object
-                    obj.vrepSimObj = vrepSimObj;
+                    obj.vrepObj = vrepObj;
             end
                                        
            % get robot handle
-           obj.rh = getObjectHandle(obj.vrepSimObj,epuckParams{1},'blocking');
+           obj.rh = getObjectHandle(obj.vrepObj,epuckParams{1},'blocking');
            
             % get robot position
-            getObjectPosition(obj.vrepSimObj,obj.rh,-1, 'streaming');
+            getObjectPosition(obj.vrepObj,obj.rh,-1, 'streaming');
             
             % get robot orientation
-            getObjectOrientation(obj.vrepSimObj,obj.rh,-1,'streaming');   
+            getObjectOrientation(obj.vrepObj,obj.rh,-1,'streaming');   
            
             % get joint handles
-            obj.jh_l = getObjectHandle(obj.vrepSimObj,epuckParams{2},'blocking');
-            obj.jh_r = getObjectHandle(obj.vrepSimObj,epuckParams{3},'blocking');
+            obj.jh_l = getObjectHandle(obj.vrepObj,epuckParams{2},'blocking');
+            obj.jh_r = getObjectHandle(obj.vrepObj,epuckParams{3},'blocking');
                        
             % set initial joints position
-            setJointPosition(obj.vrepSimObj,obj.jh_l, 0, 'blocking');
-            setJointPosition(obj.vrepSimObj,obj.jh_r, 0, 'blocking');
+            setJointPosition(obj.vrepObj,obj.jh_l, 0, 'blocking');
+            setJointPosition(obj.vrepObj,obj.jh_r, 0, 'blocking');
             
             % set initial joint velocity
-            setJointTargetVelocity(obj.vrepSimObj,obj.jh_l,0,'blocking');
-            setJointTargetVelocity(obj.vrepSimObj,obj.jh_r,0,'blocking');            
+            setJointTargetVelocity(obj.vrepObj,obj.jh_l,0,'blocking');
+            setJointTargetVelocity(obj.vrepObj,obj.jh_r,0,'blocking');            
                                     
             % get initial joints positions
-            obj.jp_o_l = getJointPosition(obj.vrepSimObj,obj.jh_l, 'streaming');       
-            obj.jp_o_r  = getJointPosition(obj.vrepSimObj,obj.jh_r, 'streaming');
+            obj.jp_o_l = getJointPosition(obj.vrepObj,obj.jh_l, 'streaming');       
+            obj.jp_o_r  = getJointPosition(obj.vrepObj,obj.jh_r, 'streaming');
             
             % get initial delta distance
-            obj.ds_o_l = getJointPosition(obj.vrepSimObj,obj.jh_l,'streaming')*obj.r_l;
-            obj.ds_o_r = getJointPosition(obj.vrepSimObj,obj.jh_r,'streaming')*obj.r_r;      
+            obj.ds_o_l = getJointPosition(obj.vrepObj,obj.jh_l,'streaming')*obj.r_l;
+            obj.ds_o_r = getJointPosition(obj.vrepObj,obj.jh_r,'streaming')*obj.r_r;      
             
             % set robot state
             setRobotState(obj,robotState);
             % get step time
-            obj.stepTime =  getSimulationTimeStep(obj.vrepSimObj,'blocking');
+            obj.stepTime =  getSimulationTimeStep(obj.vrepObj,'blocking');
             % set step time
             setStepTime(obj,obj.stepTime);
            
@@ -135,7 +135,7 @@ classdef ePuck < DifferentialMobileRobot
             setRobotVelocityEgo(obj,robotVelocityEgo) 
              
             % compute forward kinematics
-            computeForwardKinematics(obj);
+            frdK(obj);
             
             % update robot state
             updateRobotState(obj);
@@ -145,8 +145,10 @@ classdef ePuck < DifferentialMobileRobot
                                                                                     
             % set robot speed
             setSpeed(obj,v_w);
-            
+
+
             out = getRobotState(obj);
+
             
         end
         
@@ -157,17 +159,17 @@ classdef ePuck < DifferentialMobileRobot
             end
                         
             % set desired velocity
-            pauseCommunication(obj.vrepSimObj,1);
-            setJointTargetVelocity(obj.vrepSimObj,obj.jh_l,v_w(1),'oneshot');
-            setJointTargetVelocity(obj.vrepSimObj,obj.jh_r,v_w(2),'oneshot');
-            pauseCommunication(obj.vrepSimObj,0);            
+            pauseCommunication(obj.vrepObj,1);
+            setJointTargetVelocity(obj.vrepObj,obj.jh_l,v_w(1),'oneshot');
+            setJointTargetVelocity(obj.vrepObj,obj.jh_r,v_w(2),'oneshot');
+            pauseCommunication(obj.vrepObj,0);            
             
        end
        
        function  [out]=getSpeed(obj)
          
-            obj.jp_n_l = getJointPosition(obj.vrepSimObj,obj.jh_l,'buffer');
-            obj.jp_n_r = getJointPosition(obj.vrepSimObj,obj.jh_r,'buffer');
+            obj.jp_n_l = getJointPosition(obj.vrepObj,obj.jh_l,'buffer');
+            obj.jp_n_r = getJointPosition(obj.vrepObj,obj.jh_r,'buffer');
             out(1) = (obj.jp_n_l - obj.jp_o_l) / obj.stepTime;
             out(2) = (obj.jp_n_r - obj.jp_o_r) / obj.stepTime;
             obj.jp_o_l = obj.jp_n_l;
@@ -180,9 +182,9 @@ classdef ePuck < DifferentialMobileRobot
         function out=getSimRobotState(obj)
             
             % get robot position
-            out_pos = getObjectPosition(obj.vrepSimObj,obj.rh,-1, 'buffer');
+            out_pos = getObjectPosition(obj.vrepObj,obj.rh,-1, 'buffer');
             % get robot orientation
-            out_orient = getObjectOrientation(obj.vrepSimObj,obj.rh,-1,'buffer');                    
+            out_orient = getObjectOrientation(obj.vrepObj,obj.rh,-1,'buffer');                    
             % set robot state
             out = [double(out_pos(1));double(out_pos(2));double(out_orient(3))];
             
@@ -190,14 +192,14 @@ classdef ePuck < DifferentialMobileRobot
         
         function delete(obj)
              disp('Delete ePuck')
-             getObjectPosition(obj.vrepSimObj,obj.rh,-1, 'discontinue');
-             getPingTime(obj.vrepSimObj);  
-             getObjectOrientation(obj.vrepSimObj,obj.rh,-1,'discontinue');           
-             getPingTime(obj.vrepSimObj);              
-             getJointPosition(obj.vrepSimObj,obj.jh_l, 'discontinue');
-             getPingTime(obj.vrepSimObj);  
-             getJointPosition(obj.vrepSimObj,obj.jh_r, 'discontinue');            
-             getPingTime(obj.vrepSimObj);  
+             getObjectPosition(obj.vrepObj,obj.rh,-1, 'discontinue');
+             getPingTime(obj.vrepObj);  
+             getObjectOrientation(obj.vrepObj,obj.rh,-1,'discontinue');           
+             getPingTime(obj.vrepObj);              
+             getJointPosition(obj.vrepObj,obj.jh_l, 'discontinue');
+             getPingTime(obj.vrepObj);  
+             getJointPosition(obj.vrepObj,obj.jh_r, 'discontinue');            
+             getPingTime(obj.vrepObj);  
                                 
        end
        

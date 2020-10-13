@@ -33,8 +33,7 @@ classdef VREPSimScene  < handle
         clientID
         vrepObj
         error_code
-        stepTime
-        syncMode
+
         
         
     end
@@ -42,56 +41,40 @@ classdef VREPSimScene  < handle
     
     methods  (Access = public)
         
-        function obj = VREPSimScene(simParams,stepTime,syncMode)
-            
-            if nargin == 0
-                
-                disp ('argument <1:simParams> and <1:stepTime> and <1:syncMode> should be provided. Default used: simParams = {''127.0.0.1'', 19997,true,true,5000,5} and stepTime=0.02 and syncMode = 1')
-                obj.addressIP = '127.0.0.1';
-                obj.portNumber = 19997;
-                obj.connectWait = true;
-                obj.reconnect = true;
-                obj.timeOut = 5000;
-                obj.dataCycle = 5;
-                obj.stepTime = 0.02;
-                obj.syncMode = 1;
-            elseif nargin == 1
-                disp ('argument <1:stepTime> and <1:syncMode> should be provided. Default used: stepTime=0.02 and syncMode = 1')
-                obj.addressIP = simParams{1};
-                obj.portNumber = simParams{2};
-                obj.connectWait = simParams{3};
-                obj.reconnect = simParams{4};
-                obj.timeOut = simParams{5};
-                obj.dataCycle = simParams{6};
-                obj.stepTime = 0.02;
-                obj.syncMode = 1;
-               
-            elseif nargin == 2
-                disp ('<1:syncMode> should be provided. Default used: syncMode = 1')
-                obj.addressIP = simParams{1};
-                obj.portNumber = simParams{2};
-                obj.connectWait = simParams{3};
-                obj.reconnect = simParams{4};
-                obj.timeOut = simParams{5};
-                obj.dataCycle = simParams{6};
-                obj.stepTime = stepTime;
-                obj.syncMode = 1;
-                
-            else
-                
-                obj.addressIP = simParams{1};
-                obj.portNumber = simParams{2};
-                obj.connectWait = simParams{3};
-                obj.reconnect = simParams{4};
-                obj.timeOut = simParams{5};
-                obj.dataCycle = simParams{6};
-                obj.stepTime = stepTime;
-                obj.syncMode = syncMode;
-            end
-            
+        function obj = VREPSimScene(varargin)
+
+            arg = {{'127.0.0.1', 19997,true,true,5000,5},0.02,1}; 
+            arg(1:nargin) = varargin(1:nargin);
+            obj.addressIP =  checkParameterData(obj, 'addressIP', arg{1}{1});
+            obj.portNumber = checkParameterData(obj, 'portNumber', arg{1}{2});
+            obj.connectWait = checkParameterData(obj, 'connectWait', arg{1}{3});
+            obj.reconnect = checkParameterData(obj, 'reconnect', arg{1}{4});
+            obj.timeOut = checkParameterData(obj, 'timeOut', arg{1}{5});
+            obj.dataCycle = checkParameterData(obj, 'dataCycle', arg{1}{6});
+            stepTime = checkParameterData(obj, 'stepTime', arg{2});
+            syncMode = checkParameterData(obj, 'syncMode', arg{3});
+                      
             % using the prototype file (remoteApiProto.m)
             obj.vrepObj = remApi('remoteApi'); 
             
+           
+            % open connection 
+%             if (Connected(obj))
+%                                 
+%                 msg = ['VREPSimScene: already connected to remote API server [',obj.addressIP,num2str( obj.portNumber),']'];
+%                 disp(msg)   
+% 
+%             else
+                
+                if (openConnection(obj)==-1)
+                    error ('VREPSimScene: connection to remote API server [IP: %s, Port: %d] was not possible', obj.addressIP,obj.portNumber)              
+                else
+                    msg = ['VREPSimScene: connection to remote API server [',obj.addressIP,num2str( obj.portNumber),'] established'];
+                    disp(msg)   
+                end
+            %end
+            % set simulation parameters : step time and synchronous mode                
+            setSimulationParameters(obj, stepTime, syncMode);
             
             
         end
@@ -110,12 +93,21 @@ classdef VREPSimScene  < handle
         
         function closeConnection(obj)
         
-            if (obj.clientID > -1)
+            if (Connected(obj))
                 
                 obj.vrepObj.simxFinish(obj.clientID); 
                     
             end
             
+        end
+        
+        function out= Connected(obj)
+             if (obj.clientID ~= -1)
+                out = 1;
+             else
+                 out = 0;
+             end
+        
         end
         
         function pauseCommunication(obj,enable)
@@ -159,22 +151,21 @@ classdef VREPSimScene  < handle
         
         function execSimStep(obj)
         
-            if (obj.syncMode)
-                sendSynchronousTrigger(obj);
-                getPingTime(obj);   
-            end
+            sendSynchronousTrigger(obj);
+            getPingTime(obj);   
         
         end
         
-        function setSimulationParameters(obj)
+        function setSimulationParameters(obj, stepTime, syncMode)
             
-            if (obj.syncMode == 1) 
+            if (syncMode == 1) 
                 enableSynchronousMode(obj,1);
+                disp('SynchronousMode enabled: execSimStep() should be added at the end of simulation loop')
             else
                 enableSynchronousMode(obj,0);
             end
 
-                setSimulationTimeStep(obj,obj.stepTime);
+                setSimulationTimeStep(obj,stepTime);
        
         end
         
@@ -188,7 +179,7 @@ classdef VREPSimScene  < handle
             % start simulation
             obj.error_code{3,1} = obj.vrepObj.simxStartSimulation(obj.clientID,validateOperationMode(obj,operationMode));
             obj.error_code{3,2} = 'startSimulation';
-            disp('start V-REP simulation');
+            disp('Start V-REP simulation');
 
             
         end
@@ -202,7 +193,7 @@ classdef VREPSimScene  < handle
              
             obj.error_code{4,1} = obj.vrepObj.simxStopSimulation(obj.clientID,validateOperationMode(obj,operationMode));
             obj.error_code{4,2} = 'stopSimulation';             
-            disp('stop V-REP simulation');
+            disp('Stop V-REP simulation');
 
             
         end
@@ -215,7 +206,7 @@ classdef VREPSimScene  < handle
              
             obj.error_code{5,1} = obj.vrepObj.simxPauseSimulation(obj.clientID,validateOperationMode(obj,operationMode));
             obj.error_code{5,2} = 'pauseSimulation';
-            disp('pause V-REP simulation');
+            disp('Pause V-REP simulation');
             
         end
         
@@ -418,9 +409,9 @@ classdef VREPSimScene  < handle
         end
         
         function delete(obj)
-           % make sure that the last command sent out had time to arrive
-           getPingTime(obj);    
-           % stop vrep simulation
+            % make sure that the last command sent out had time to arrive
+            getPingTime(obj);    
+            % stop vrep simulation
             stopSimulation(obj,'blocking');   
             % close opened connections
             closeConnection(obj);
@@ -439,7 +430,14 @@ classdef VREPSimScene  < handle
     end
     
     methods (Access = private)
-          
+        
+        function out = checkParameterData(~, type, arg) 
+
+            X = [type,' set to ',num2str(arg)];
+            disp(X)   
+            out=arg;
+
+        end
 
     end
 end
