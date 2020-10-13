@@ -12,67 +12,83 @@ syncMode = true;
 % robot state
 robotState=zeros(3, 1);
 
-% default api server parameters
+% controller
+ObjPID=pidController(2,0,0,stepTime);
+
+
+% simulation scene API server parameters
 sceneSimParams = {'127.0.0.1', 19997,true,true,5000,5};
 
-% instantiate VREP simulation scene object using the default api server
+% instantiate VREP simulation scene object
 ObjSceneSim = VREPSimScene(sceneSimParams,stepTime,syncMode);
 
+% load simulation scene
+loadScene(ObjSceneSim,'/home/faroub/Documents/development-projects/projects-matlab/vrep-projects/robotic-framework/src_vrep/differential_robot_behavior_based_controller.ttt',0, 'blocking');
+
+% ePuck API server parameters
+ePuckSimParams = {'127.0.0.1', 19992,true,true,5000,5};
+%ePuckSimParams = {'127.0.0.1', 19997,true,true,5000,5};
+
+% time pause
+pause(2);
+
+% instantiate VREP simulation robot object
+ObjePuckSim = VREPSimRobot(ePuckSimParams);
+
 % ePuck parameters
-ePuck1Params = {'ePuck', 'ePuck_leftJoint', 'ePuck_rightJoint'};
-
-% ePuck simulation parameters
-ePuck1SimParams = {'127.0.0.1', 19992,true,true,5000,5};
-
-% instantiate VREPSim object
-ObjePuck1Sim = VREPSimRobot(ePuck1SimParams);
-
-if (openConnection(ObjSceneSim)~=-1)
+ePuckParams = {'ePuck', 'ePuck_leftJoint', 'ePuck_rightJoint'};
         
-    disp('connected to remote API server');  
-    
+% instantiate ePuck object
+ObjePuck = ePuck(ObjePuckSim, ePuckParams,robotState);
 
-    % load simulation scene
-    loadScene(ObjSceneSim,'/home/faroub/Documents/development-projects/projects-matlab/vrep-projects/robotic-framework/src_vrep/differential_robot_behavior_based_controller.ttt',0, 'blocking');
 
-    % set simulation parameters : step time and synchronous mode                
-    setSimulationParameters(ObjSceneSim);
-       
-    % instantiate Epuck object
-    ObjePuck1 = ePuck(ObjePuck1Sim, ePuck1Params,robotState);
+% get target handle
+targetHandle=getObjectHandle(ObjSceneSim,'target','blocking');
 
-    
-    % start simulation
-    startSimulation(ObjSceneSim,'blocking');
+% get target position
+targetPos=getObjectPosition(ObjSceneSim,targetHandle,-1,'streaming');
+
+% start simulation
+startSimulation(ObjSceneSim,'blocking');
 
     
 
-    % while we are connected:
-    while (getConnectionID(ObjSceneSim)~=-1) 
+% --- simulation loop ---- %
 
-        % Trajectory/Path planner
+while (getConnectionID(ObjSceneSim)~=-1) 
+
+
+    % get target position
+    targetPos=getObjectPosition(ObjSceneSim,targetHandle,-1,'buffer');
+
+
+    % desired heading
+    phi_des = atan2(targetPos(2)-robotState(2),targetPos(1)-robotState(1));
+
+    % compute error 
+    error = phi_des - robotState(3);
+
+    % ensure error in range [-pi, pi]        
+    error = atan2(sin(error),cos(error));
+
+    % controller 
+    omega = compute(ObjPID,error);
+
+    % moves robot and gets control inputes and outputs current pose of the robot
+    robotState = move(ObjePuck,0.2,omega);
+
+
+    % executed only when synchronous  mode enables
+    execSimStep(ObjSceneSim);
         
-
-        % controller that gets current pose and generates control inputs
-        % controller 
-        
-        % moves robot and gets control inputes and outputs current pose of the robot
-        robotState = move(ObjePuck1,0.1,0);
-
-
-        % executed only when synchronous  mode enables
-        execSimStep(ObjSceneSim);
-        
-    end
+end
+    
+    % discontinue streaming
+    getObjectPosition(ObjSceneSim,targetHandle,-1, 'discontinue');
     
     disp('program ended');
     
+ 
 
-    
-else
-    
-    disp('failed connecting to remote API server');
-    
-end
 
 end
