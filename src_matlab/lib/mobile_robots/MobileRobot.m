@@ -21,8 +21,8 @@ classdef (Abstract) MobileRobot < handle
   
     methods  (Access = protected)
         
-        frdKin(obj,robotVelocityEgo) % compute forward kinematics
-        invKin(obj,robotVelocityAllo) % compute inverse kinematics
+        computeForwardKinematics(obj,robotVelocityEgo) % compute forward kinematics
+        computeInverseKinematics(obj,robotVelocityAllo) % compute inverse kinematics
     
     end
     

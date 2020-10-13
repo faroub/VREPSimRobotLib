@@ -64,13 +64,13 @@ classdef DifferentialDrive  < MobileRobot
         
         end
        
-        function frdK(obj)
+        function computeForwardKinematics(obj)
             
             obj.robotVelocityAllo = rotz(obj.robotState(3)*obj.rad2deg)*obj.robotVelocityEgo;
         
         end
         
-        function invK(obj)
+        function computeInverseKinematics(obj)
             
             obj.robotVelocityEgo = rotz(obj.robotState(3)*obj.rad2deg)\obj.robotVelocityAllo;
         

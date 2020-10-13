@@ -135,7 +135,7 @@ classdef ePuck < DifferentialDrive
             setRobotVelocityEgo(obj,robotVelocityEgo) 
              
             % compute forward kinematics
-            frdK(obj);
+            computeForwardKinematics(obj);
             
             % update robot state
             updateRobotState(obj);
