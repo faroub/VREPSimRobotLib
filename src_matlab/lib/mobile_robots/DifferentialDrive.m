@@ -22,7 +22,7 @@ classdef DifferentialDrive  < MobileRobot
     
     properties (Access = private)
 
-
+        % -------internal variables
         robotState % robot state     
         robotVelocityEgo % robot velocity in egocentric frame 
         robotVelocityAllo % robot velocity in allocentric frame 
