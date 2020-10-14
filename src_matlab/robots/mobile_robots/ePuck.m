@@ -8,9 +8,8 @@ classdef ePuck < DifferentialDrive
     
     properties (Constant)
         
-        r_l = 0.021; % left wheel radius [m]
-        r_r = 0.021; % right wheel radius [m]
-        l = 0.053; % distance between wheels [m]
+        wheelRadius = 0.021; % wheel radius [m]        
+        wheelsDistance = 0.053; % distance between wheels [m]
       
     
     end
@@ -29,24 +28,25 @@ classdef ePuck < DifferentialDrive
     
     properties (Access = private)
         
-        vrepObj = -1; % V_REP simulation object     
-        rh = -1; % robot handle
-        jh_l = -1; % left joint handle
-        jh_r = -1; % right joint handle                  
-        jp_n_l = 0; % left current joint position [rad]
-        jp_n_r = 0; % right current joint position [rad]
-        jp_o_l = 0; % left previous joint position [rad]
-        jp_o_r = 0; % right previous joint position [rad]
-        ds_n_l % left current delta distance [m]
-        ds_n_r % right current delta distance [m]
-        ds_o_l % left previous delta distance [m]
-        ds_o_r % right previous delta distance [m]
-        stepTime = -1;% step time [s]
+        % ------ simulation parameters
+        stepTime % step time [s]
+        vrepObj % V_REP simulation object 
         
+        % ------ VREP parameters
+        robotHandle % robot handle
+        jointHandle % joints handles
+        cameraHandle % camera handle
+        lightSensorHandle % light sensor handle
+        ledLightHandle % led light handle
+        speakerHandle % speaker handle
+        proximitySensorHandle % proximity sensors handles
         
-       
-        
-       
+        % -------internal variables
+        jointPositionNew % current joint position [rad]       
+        jointPositionOld % previous joint position [rad]        
+        deltaDistanceNew % current delta distance [m]        
+        deltaDistanceOld % previous delta distance [m]
+                                                      
     end
     
     methods  (Access = public)
@@ -61,13 +61,13 @@ classdef ePuck < DifferentialDrive
                     % get V_REP simulation object
                     obj.vrepSimObj = vrepObj;
                     % get robot handle
-                    obj.rh = getObjectHandle(obj.vrepObj,epuckParams{1},'blocking');
+                    obj.robotHandle = getObjectHandle(obj.vrepObj,epuckParams.ePuck.name.Text,'blocking');
                     % get robot position
-                    out_pos = getObjectPosition(obj.vrepObj,obj.rh,-1, 'streaming');
+                    robotPos = getObjectPosition(obj.vrepObj,obj.robotHandle,-1, 'streaming');
                     % get robot orientation
-                    out_orient = getObjectOrientation(obj.vrepObj,obj.rh,-1,'streaming');                    
+                    robotOrient = getObjectOrientation(obj.vrepObj,obj.robotHandle,-1,'streaming');                    
                    % get robot state
-                   robotState = [double(out_pos(1));double(out_pos(2));double(out_orient(3))];
+                   robotState = [double(robotPos(1));double(robotPos(2));double(robotOrient(3))];
  
                     
                 case 3
@@ -76,33 +76,50 @@ classdef ePuck < DifferentialDrive
             end
                                        
            % get robot handle
-           obj.rh = getObjectHandle(obj.vrepObj,epuckParams{1},'blocking');
+           obj.robotHandle = getObjectHandle(obj.vrepObj,epuckParams.ePuck.name.Text,'blocking');
            
             % get robot position
-            getObjectPosition(obj.vrepObj,obj.rh,-1, 'streaming');
+            getObjectPosition(obj.vrepObj,obj.robotHandle,-1, 'streaming');
             
             % get robot orientation
-            getObjectOrientation(obj.vrepObj,obj.rh,-1,'streaming');   
+            getObjectOrientation(obj.vrepObj,obj.robotHandle,-1,'streaming');   
            
-            % get joint handles
-            obj.jh_l = getObjectHandle(obj.vrepObj,epuckParams{2},'blocking');
-            obj.jh_r = getObjectHandle(obj.vrepObj,epuckParams{3},'blocking');
-                       
+            % get joints handles
+            obj.jointHandle(1) = getObjectHandle(obj.vrepObj,epuckParams.ePuck.leftJoint.Text,'blocking');
+            obj.jointHandle(2) = getObjectHandle(obj.vrepObj,epuckParams.ePuck.rightJoint.Text,'blocking');
+            
+            % get camera handle 
+            cameraHandle = getObjectHandle(obj.vrepObj,epuckParams.ePuck.camera.Text,'blocking');
+            
+            % get light sensor handle 
+            lightSensorHandle = getObjectHandle(obj.vrepObj,epuckParams.ePuck.lightSensor.Text,'blocking');            
+            
+            % get led light handle 
+            ledLightHandle = getObjectHandle(obj.vrepObj,epuckParams.ePuck.ledLight.Text,'blocking');
+            
+            % get speaker handle 
+            speakerHandle = getObjectHandle(obj.vrepObj,epuckParams.ePuck.speaker.Text,'blocking');
+                                    
+            % get proximity sensors handles
+            for i = 1:length(epuckParams.ePuck.proxSensor)
+                proximitySensorHandle(i) = getObjectHandle(obj.vrepObj,epuckParams.ePuck.proxSensor{i}.Text,'blocking');
+            end
+                                   
             % set initial joints position
-            setJointPosition(obj.vrepObj,obj.jh_l, 0, 'blocking');
-            setJointPosition(obj.vrepObj,obj.jh_r, 0, 'blocking');
+            setJointPosition(obj.vrepObj,obj.jointHandle(1), 0, 'blocking');
+            setJointPosition(obj.vrepObj,obj.jointHandle(2), 0, 'blocking');
             
             % set initial joint velocity
-            setJointTargetVelocity(obj.vrepObj,obj.jh_l,0,'blocking');
-            setJointTargetVelocity(obj.vrepObj,obj.jh_r,0,'blocking');            
+            setJointTargetVelocity(obj.vrepObj,obj.jointHandle(1),0,'blocking');
+            setJointTargetVelocity(obj.vrepObj,obj.jointHandle(2),0,'blocking');            
                                     
             % get initial joints positions
-            obj.jp_o_l = getJointPosition(obj.vrepObj,obj.jh_l, 'streaming');       
-            obj.jp_o_r  = getJointPosition(obj.vrepObj,obj.jh_r, 'streaming');
+            obj.jointPositionOld(1) = getJointPosition(obj.vrepObj,obj.jointHandle(1), 'streaming');       
+            obj.jointPositionOld(2)  = getJointPosition(obj.vrepObj,obj.jointHandle(2), 'streaming');
             
             % get initial delta distance
-            obj.ds_o_l = getJointPosition(obj.vrepObj,obj.jh_l,'streaming')*obj.r_l;
-            obj.ds_o_r = getJointPosition(obj.vrepObj,obj.jh_r,'streaming')*obj.r_r;      
+            obj.deltaDistanceOld(1) = getJointPosition(obj.vrepObj,obj.jointHandle(1),'streaming')*obj.wheelRadius;
+            obj.deltaDistanceOld(2) = getJointPosition(obj.vrepObj,obj.jointHandle(2),'streaming')*obj.wheelRadius;      
             
             % set robot state
             setRobotState(obj,robotState);
@@ -126,11 +143,11 @@ classdef ePuck < DifferentialDrive
                     omega = 0;                    
             end
             
-            % get robot speed
-            v_w=getSpeed(obj);
+            % get wheels speed
+            wheelsSpeed=getSpeed(obj);
               
             % set robot velocity in ego frame
-            robotVelocityEgo = [(obj.r_l*v_w(1)+obj.r_r*v_w(2))/2;0;(obj.r_r*v_w(2)-obj.r_l*v_w(1))/obj.l];
+            robotVelocityEgo = [(obj.wheelRadius*wheelsSpeed(1)+obj.wheelRadius*wheelsSpeed(2))/2;0;(obj.wheelRadius*wheelsSpeed(2)-obj.wheelRadius*wheelsSpeed(1))/obj.wheelsDistance];
             
             setRobotVelocityEgo(obj,robotVelocityEgo) 
              
@@ -140,11 +157,11 @@ classdef ePuck < DifferentialDrive
             % update robot state
             updateRobotState(obj);
                                                             
-            % compute wheels speeds
-            v_w = [(2*v-omega*obj.l)/(2*obj.r_l);(2*v+omega*obj.l)/(2*obj.r_r)];  % [rad/s]
+            % compute wheels speed
+            wheelsSpeed = [(2*v-omega*obj.wheelsDistance)/(2*obj.wheelRadius);(2*v+omega*obj.wheelsDistance)/(2*obj.wheelRadius)];  % [rad/s]
                                                                                     
-            % set robot speed
-            setSpeed(obj,v_w);
+            % set wheels speed
+            setSpeed(obj,wheelsSpeed);
 
 
             out = getRobotState(obj);
@@ -152,28 +169,27 @@ classdef ePuck < DifferentialDrive
             
         end
         
-       function  setSpeed(obj,v_w)
+       function  setSpeed(obj,wheelsSpeed)
             
             if nargin == 1                
-                v_w = [0;0];                                        
+                wheelsSpeed = [0;0];                                        
             end
                         
             % set desired velocity
             pauseCommunication(obj.vrepObj,1);
-            setJointTargetVelocity(obj.vrepObj,obj.jh_l,v_w(1),'oneshot');
-            setJointTargetVelocity(obj.vrepObj,obj.jh_r,v_w(2),'oneshot');
+            setJointTargetVelocity(obj.vrepObj,obj.jointHandle(1),wheelsSpeed(1),'oneshot');
+            setJointTargetVelocity(obj.vrepObj,obj.jointHandle(2),wheelsSpeed(2),'oneshot');
             pauseCommunication(obj.vrepObj,0);            
             
        end
        
-       function  [out]=getSpeed(obj)
+       function  out=getSpeed(obj)
          
-            obj.jp_n_l = getJointPosition(obj.vrepObj,obj.jh_l,'buffer');
-            obj.jp_n_r = getJointPosition(obj.vrepObj,obj.jh_r,'buffer');
-            out(1) = (obj.jp_n_l - obj.jp_o_l) / obj.stepTime;
-            out(2) = (obj.jp_n_r - obj.jp_o_r) / obj.stepTime;
-            obj.jp_o_l = obj.jp_n_l;
-            obj.jp_o_r = obj.jp_n_r;
+            obj.jointPositionNew(1) = getJointPosition(obj.vrepObj,obj.jointHandle(1),'buffer');
+            obj.jointPositionNew(2) = getJointPosition(obj.vrepObj,obj.jointHandle(2),'buffer');
+            out = [(obj.jointPositionNew(1) - obj.jointPositionOld(1)) / obj.stepTime;(obj.jointPositionNew(2) - obj.jointPositionOld(2)) / obj.stepTime];            
+            obj.jointPositionOld(1) = obj.jointPositionNew(1);
+            obj.jointPositionOld(2) = obj.jointPositionNew(2);
         
        end
        
@@ -182,24 +198,25 @@ classdef ePuck < DifferentialDrive
         function out=getSimRobotState(obj)
             
             % get robot position
-            out_pos = getObjectPosition(obj.vrepObj,obj.rh,-1, 'buffer');
+            robotPos = getObjectPosition(obj.vrepObj,obj.robotHandle,-1, 'buffer');
             % get robot orientation
-            out_orient = getObjectOrientation(obj.vrepObj,obj.rh,-1,'buffer');                    
+            robotOrient = getObjectOrientation(obj.vrepObj,obj.robotHandle,-1,'buffer');                    
             % set robot state
-            out = [double(out_pos(1));double(out_pos(2));double(out_orient(3))];
+            out = [double(robotPos(1));double(robotPos(2));double(robotOrient(3))];
             
         end
         
         function delete(obj)
-             disp('Delete ePuck')
-             getObjectPosition(obj.vrepObj,obj.rh,-1, 'discontinue');
+             
+             getObjectPosition(obj.vrepObj,obj.robotHandle,-1, 'discontinue');
              getPingTime(obj.vrepObj);  
-             getObjectOrientation(obj.vrepObj,obj.rh,-1,'discontinue');           
+             getObjectOrientation(obj.vrepObj,obj.robotHandle,-1,'discontinue');           
              getPingTime(obj.vrepObj);              
-             getJointPosition(obj.vrepObj,obj.jh_l, 'discontinue');
+             getJointPosition(obj.vrepObj,obj.jointHandle(1), 'discontinue');
              getPingTime(obj.vrepObj);  
-             getJointPosition(obj.vrepObj,obj.jh_r, 'discontinue');            
+             getJointPosition(obj.vrepObj,obj.jointHandle(2), 'discontinue');            
              getPingTime(obj.vrepObj);  
+             disp('ePuck object deleted')
                                 
        end
        
