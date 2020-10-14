@@ -23,7 +23,8 @@ classdef VREPSimScene  < handle
     
     properties (Access = private)
         
-     
+        stepTime
+        syncMode
         addressIP
         portNumber
         connectWait
@@ -42,41 +43,122 @@ classdef VREPSimScene  < handle
     methods  (Access = public)
         
         function obj = VREPSimScene(varargin)
+            
+            switch nargin
+                case 0                 
+                    error ('VREPSimScene: argument <1:simParams={addressIP,portNumber,connectWait,reconnect,timeOut,dataCycle}> must be provided')
+                case 1
 
-            arg = {{'127.0.0.1', 19997,true,true,5000,5},0.02,1}; 
-            arg(1:nargin) = varargin(1:nargin);
-            obj.addressIP =  checkParameterData(obj, 'addressIP', arg{1}{1});
-            obj.portNumber = checkParameterData(obj, 'portNumber', arg{1}{2});
-            obj.connectWait = checkParameterData(obj, 'connectWait', arg{1}{3});
-            obj.reconnect = checkParameterData(obj, 'reconnect', arg{1}{4});
-            obj.timeOut = checkParameterData(obj, 'timeOut', arg{1}{5});
-            obj.dataCycle = checkParameterData(obj, 'dataCycle', arg{1}{6});
-            stepTime = checkParameterData(obj, 'stepTime', arg{2});
-            syncMode = checkParameterData(obj, 'syncMode', arg{3});
-                      
-            % using the prototype file (remoteApiProto.m)
-            obj.vrepObj = remApi('remoteApi'); 
-            
-           
-            % open connection 
-%             if (Connected(obj))
-%                                 
-%                 msg = ['VREPSimScene: already connected to remote API server [',obj.addressIP,num2str( obj.portNumber),']'];
-%                 disp(msg)   
-% 
-%             else
-                
-                if (openConnection(obj)==-1)
-                    error ('VREPSimScene: connection to remote API server [IP: %s, Port: %d] was not possible', obj.addressIP,obj.portNumber)              
-                else
-                    msg = ['VREPSimScene: connection to remote API server [',obj.addressIP,num2str( obj.portNumber),'] established'];
-                    disp(msg)   
-                end
-            %end
-            % set simulation parameters : step time and synchronous mode                
-            setSimulationParameters(obj, stepTime, syncMode);
-            
-            
+                    if isa(varargin{1}, 'VREPSimScene')
+
+                        % check and clone the passed VREPSimScene object
+                        obj = varargin{1};
+
+                    else
+
+                        arg = {{'127.0.0.1', 19997,true,true,5000,5},0.02,1}; 
+                        arg{1}(1:length(varargin{1})) = varargin{1};
+                        obj.addressIP =  checkParameterData(obj, 'addressIP', arg{1}{1});
+                        obj.portNumber = checkParameterData(obj, 'portNumber', arg{1}{2});
+                        obj.connectWait = checkParameterData(obj, 'connectWait', arg{1}{3});
+                        obj.reconnect = checkParameterData(obj, 'reconnect', arg{1}{4});
+                        obj.timeOut = checkParameterData(obj, 'timeOut', arg{1}{5});
+                        obj.dataCycle = checkParameterData(obj, 'dataCycle', arg{1}{6});
+                        obj.stepTime = checkParameterData(obj, 'stepTime', arg{2});
+                        obj.syncMode = checkParameterData(obj, 'syncMode', arg{3});
+
+                        % using the prototype file (remoteApiProto.m)
+                        obj.vrepObj = remApi('remoteApi');
+
+                        % open connection 
+                        if (openConnection(obj)==-1)
+
+                            error ('VREPSimScene: connection to remote API server [IP: %s, Port: %d] was not possible', obj.addressIP,obj.portNumber)              
+
+                        else
+
+                            msg = ['VREPSimScene: connection to remote API server [IP: ',obj.addressIP,', Port: ',num2str( obj.portNumber),'] established'];
+                            disp(msg)   
+
+                        end
+                        % set simulation parameters : step time and synchronous mode
+                        setSimulationParameters(obj, obj.stepTime, obj.syncMode);
+
+                    end
+                    
+                case 2
+                    
+                        arg = {{'127.0.0.1', 19997,true,true,5000,5},0.02,1}; 
+                        arg{1}(1:length(varargin{1})) = varargin{1};
+                        arg{2} = varargin{2};                       
+                        obj.addressIP =  checkParameterData(obj, 'addressIP', arg{1}{1});
+                        obj.portNumber = checkParameterData(obj, 'portNumber', arg{1}{2});
+                        obj.connectWait = checkParameterData(obj, 'connectWait', arg{1}{3});
+                        obj.reconnect = checkParameterData(obj, 'reconnect', arg{1}{4});
+                        obj.timeOut = checkParameterData(obj, 'timeOut', arg{1}{5});
+                        obj.dataCycle = checkParameterData(obj, 'dataCycle', arg{1}{6});
+                        obj.stepTime = checkParameterData(obj, 'stepTime', arg{2});
+                        obj.syncMode = checkParameterData(obj, 'syncMode', arg{3});
+                        
+                        % using the prototype file (remoteApiProto.m)
+                        obj.vrepObj = remApi('remoteApi');
+
+                        % open connection 
+                        if (openConnection(obj)==-1)
+
+                            error ('VREPSimScene: connection to remote API server [IP: %s, Port: %d] was not possible', obj.addressIP,obj.portNumber)              
+
+                        else
+
+                            msg = ['VREPSimScene: connection to remote API server [IP: ',obj.addressIP,', Port: ',num2str( obj.portNumber),'] established'];
+                            disp(msg)   
+
+                        end
+                        % set simulation parameters : step time and synchronous mode
+                        setSimulationParameters(obj, obj.stepTime, obj.syncMode);
+
+                     
+                    
+                   
+                case 3
+                    
+                        arg = {{'127.0.0.1', 19997,true,true,5000,5},0.02,1}; 
+                        arg{1}(1:length(varargin{1})) = varargin{1};
+                        arg{2} = varargin{2}; 
+                        arg{3} = varargin{3};  
+                        obj.addressIP =  checkParameterData(obj, 'addressIP', arg{1}{1});
+                        obj.portNumber = checkParameterData(obj, 'portNumber', arg{1}{2});
+                        obj.connectWait = checkParameterData(obj, 'connectWait', arg{1}{3});
+                        obj.reconnect = checkParameterData(obj, 'reconnect', arg{1}{4});
+                        obj.timeOut = checkParameterData(obj, 'timeOut', arg{1}{5});
+                        obj.dataCycle = checkParameterData(obj, 'dataCycle', arg{1}{6});
+                        obj.stepTime = checkParameterData(obj, 'stepTime', arg{2});
+                        obj.syncMode = checkParameterData(obj, 'syncMode', arg{3});
+                        
+                        % using the prototype file (remoteApiProto.m)
+                        obj.vrepObj = remApi('remoteApi');
+
+                        % open connection 
+                        if (openConnection(obj)==-1)
+
+                            error ('VREPSimScene: connection to remote API server [IP: %s, Port: %d] was not possible', obj.addressIP,obj.portNumber)              
+
+                        else
+
+                            msg = ['VREPSimScene: connection to remote API server [IP: ',obj.addressIP,', Port: ',num2str( obj.portNumber),'] established'];
+                            disp(msg)   
+
+                        end
+                        % set simulation parameters : step time and synchronous mode
+                        setSimulationParameters(obj, obj.stepTime, obj.syncMode);
+                        
+                            
+                otherwise
+                        
+                    error ('VREPSimRobot: usage error, please check documentation')
+
+                    
+            end
         end
         
         function out = openConnection(obj)
