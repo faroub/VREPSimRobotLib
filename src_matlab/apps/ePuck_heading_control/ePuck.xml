@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot category="mobile">
+	<name>ePuck</name>
+	<leftJoint>ePuck_leftJoint</leftJoint>
+  	<rightJoint>ePuck_rightJoint</rightJoint>
+  	<camera>ePuck_camera</camera>
+  	<lightSensor>ePuck_lightSensor</lightSensor>
+	<ledLight>ePuck_ledLight</ledLight>
+  	<proxSensor>ePuck_proxSensor1</proxSensor>
+	<proxSensor>ePuck_proxSensor2</proxSensor>
+	<proxSensor>ePuck_proxSensor3</proxSensor>
+	<proxSensor>ePuck_proxSensor4</proxSensor>
+	<proxSensor>ePuck_proxSensor5</proxSensor>
+	<proxSensor>ePuck_proxSensor6</proxSensor>
+	<proxSensor>ePuck_proxSensor7</proxSensor>
+	<proxSensor>ePuck_proxSensor8</proxSensor>
+</robot> 
