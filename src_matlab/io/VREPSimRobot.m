@@ -40,48 +40,50 @@ classdef VREPSimRobot  < handle
     
     methods  (Access = public)
         
-        function obj = VREPSimRobot(simParams)
+        function obj = VREPSimRobot(varargin)
             
-            % todo: include the posibility to pass a VREPSimScene object as
-            % argument
-            % TODO: check if connection already established before
-            % attempting it
-            % Fixme: Is the area of hemisphere as below?
             switch nargin
                 case 0                 
-                    error ('argument <1:simParams> must be provided')
+                    error ('VREPSimRobot: argument <1:simParams={addressIP,portNumber,connectWait,reconnect,timeOut,dataCycle}> must be provided')
                 case 1
-                
-                    obj.addressIP = simParams{1};
-                    obj.portNumber = simParams{2};
-                    obj.connectWait = simParams{3};
-                    obj.reconnect = simParams{4};
-                    obj.timeOut = simParams{5};
-                    obj.dataCycle = simParams{6};
+                     
+                    if isa(varargin{1}, 'VREPSimRobot')
+                        
+                        % check and clone the passed VREPSimRobot object
+                        obj = varargin{1};
+                     
+                    else
+                        arg = {'127.0.0.1',[],true,true,5000,5};
+                        arg(1:length(varargin{1})) = varargin{1};                                                
+                        obj.addressIP =  checkParameterData(obj, 'addressIP', arg{1});
+                        obj.portNumber = checkParameterData(obj, 'portNumber', arg{2});
+                        obj.connectWait = checkParameterData(obj, 'connectWait', arg{3});
+                        obj.reconnect = checkParameterData(obj, 'reconnect', arg{4});
+                        obj.timeOut = checkParameterData(obj, 'timeOut', arg{5});
+                        obj.dataCycle = checkParameterData(obj, 'dataCycle', arg{6});
+                        
+                        % using the prototype file (remoteApiProto.m)
+                        obj.vrepObj = remApi('remoteApi');
+
+                        % open connection 
+                        if (openConnection(obj)==-1)
+
+                            error ('VREPSimRobot: connection to remote API server [IP: %s, Port: %d] was not possible', obj.addressIP,obj.portNumber)              
+
+                        else
+
+                            msg = ['VREPSimRobot: connection to remote API server [IP: ',obj.addressIP,', Port: ',num2str( obj.portNumber),'] established'];
+                            disp(msg)   
+
+                        end
+                    end
+                    
+                otherwise
+                    
+                    error ('VREPSimRobot: usage error, please check documentation')
 
             end
-            
-            % using the prototype file (remoteApiProto.m)
-            obj.vrepObj = remApi('remoteApi'); 
-            
-
-            % open connection 
-%             if (Connected(obj))
-%                                 
-%                 msg = ['VREPSimRobot: already connected to remote API server [',obj.addressIP,num2str( obj.portNumber),']'];
-%                 disp(msg)   
-% 
-%             else
-                
-                if (openConnection(obj)==-1)
-                    error ('VREPSimRobot: connection to remote API server [IP: %s, Port: %d] was not possible', obj.addressIP,obj.portNumber)              
-                else
-                    msg = ['VREPSimRobot: connection to remote API server [',obj.addressIP,num2str( obj.portNumber),'] established'];
-                    disp(msg)   
-                end
-            
-        %end
-            
+                      
         end
         
         function out = openConnection(obj)
@@ -396,7 +398,23 @@ classdef VREPSimRobot  < handle
     end
     
     methods (Access = private)
-          
+        
+        function out = checkParameterData(~, type, arg) 
+
+            if isempty(arg)
+
+                error ('%s must be provided',type)
+                out = arg;
+                
+            else
+                
+                X = [type,' set to ',num2str(arg)];
+                disp(X)   
+                out=arg;
+                
+            end
+
+        end
 
     end
 end
