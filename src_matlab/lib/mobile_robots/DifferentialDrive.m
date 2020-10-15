@@ -1,4 +1,4 @@
-classdef DifferentialDrive  < MobileRobot
+classdef DifferentialDrive  < handle
     %   DifferentialMobileRobot: abstract base class for differential robots
     %
     %   A DifferentialMobileRobot object holds all information related to 
@@ -12,99 +12,37 @@ classdef DifferentialDrive  < MobileRobot
       
     
     end
-    
-   
-    properties (Access = protected)
-  
-
-        
-    end
-    
-    properties (Access = private)
-
-        % -------internal variables
-        robotState % robot state     
-        robotVelocityEgo % robot velocity in egocentric frame 
-        robotVelocityAllo % robot velocity in allocentric frame 
-        stepTime % step time [s]
-       
-        
-
-        
-    end
-    
-
-    methods  (Access = public)
+           
+    methods  (Abstract)
      
-
+        move(obj,v,omega) % move robot
+        
     end
     
     methods (Access = protected)
-        
-        function setRobotVelocityEgo(obj,robotVelocityEgo)
-            
-            obj.robotVelocityEgo = robotVelocityEgo;
-        
-        end
-        
-        function out=getRobotVelocityEgo(obj)
-            
-            out=obj.robotVelocityEgo;
-        
-        end
-        function setRobotVelocityAllo(obj,robotVelocityAllo)
-            
-            obj.robotVelocityAllo = robotVelocityAllo;
+                       
+        function out = computeForwardKinematics(obj,robotOrient,robotVelocityEgo)
+
+            out = rotz(robotOrient*obj.rad2deg)*robotVelocityEgo;
         
         end
         
-        function out=getRobotVelocityAllo(obj)
+        
+        function out = computeInverseKinematics(obj,robotOrient,robotVelocityAllo)
             
-            out=obj.robotVelocityAllo;
+            out = rotz(robotOrient*obj.rad2deg)\robotVelocityAllo;
         
         end
+        
        
-        function computeForwardKinematics(obj)
+        function out = updateRobotState(~,robotState,robotVelocityAllo,stepTime)
             
-            obj.robotVelocityAllo = rotz(obj.robotState(3)*obj.rad2deg)*obj.robotVelocityEgo;
-        
-        end
-        
-        function computeInverseKinematics(obj)
-            
-            obj.robotVelocityEgo = rotz(obj.robotState(3)*obj.rad2deg)\obj.robotVelocityAllo;
-        
-        end
-        
-        function updateRobotState(obj)
-            
-            obj.robotState(1) = obj.robotState(1) + obj.robotVelocityAllo(1)*obj.stepTime;
-            obj.robotState(2) = obj.robotState(2) + obj.robotVelocityAllo(2)*obj.stepTime;
-            obj.robotState(3) = obj.robotState(3) + obj.robotVelocityAllo(3)*obj.stepTime;
+            out(1) = robotState(1) + robotVelocityAllo(1)*stepTime;
+            out(2) = robotState(2) + robotVelocityAllo(2)*stepTime;
+            out(3) = robotState(3) + robotVelocityAllo(3)*stepTime;
                    
         end
-        
-        function out=getRobotState(obj)
-            
-            out = obj.robotState;
-                   
-        end
-        
-        function setRobotState(obj,robotState)
-            
-            obj.robotState = robotState;
-                   
-        end
-        
-        function setStepTime(obj,stepTime)
-            
-            obj.stepTime = stepTime;
-                   
-        end
-        
-        
-    end
-    methods (Access = private)
+                                 
     end
     
 end
