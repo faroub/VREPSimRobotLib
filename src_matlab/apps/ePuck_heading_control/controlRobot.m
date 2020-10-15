@@ -7,6 +7,7 @@ function controlRobot()
 stepTime = 0.02;
 
 % is simulation synchronous
+% every code iteration corresponds to one physical step on the simulator
 syncMode = true;
 
 % robot state
@@ -22,12 +23,15 @@ sceneSimParams = {'127.0.0.1', 19997,true,true,5000,5};
 % instantiate VREP simulation scene object
 ObjSceneSim = VREPSimScene(sceneSimParams,stepTime,syncMode);
 
+
+
+ObjSceneSim2 = VREPSimScene(ObjSceneSim);
+
 % load simulation scene
-loadScene(ObjSceneSim,'/home/faroub/Documents/development-projects/projects-matlab/vrep-projects/robotic-framework/src_vrep/differential_robot_behavior_based_controller.ttt',0, 'blocking');
+loadScene(ObjSceneSim2,'/home/faroub/Documents/development-projects/projects-matlab/vrep-projects/robotic-framework/src_vrep/differential_robot_behavior_based_controller.ttt',0, 'blocking');
 
 % ePuck API server parameters
 ePuckSimParams = {'127.0.0.1', 19992,true,true,5000,5};
-%ePuckSimParams = {'127.0.0.1', 19997,true,true,5000,5};
 
 % time pause
 pause(2);
@@ -36,7 +40,7 @@ pause(2);
 ObjePuckSim = VREPSimRobot(ePuckSimParams);
 
 % ePuck parameters
-ePuckParams = {'ePuck', 'ePuck_leftJoint', 'ePuck_rightJoint'};
+ePuckParams = xml2struct('ePuckData.xml');
         
 % instantiate ePuck object
 ObjePuck = ePuck(ObjePuckSim, ePuckParams,robotState);
@@ -46,7 +50,7 @@ ObjePuck = ePuck(ObjePuckSim, ePuckParams,robotState);
 targetHandle=getObjectHandle(ObjSceneSim,'target','blocking');
 
 % get target position
-targetPos=getObjectPosition(ObjSceneSim,targetHandle,-1,'streaming');
+getObjectPosition(ObjSceneSim,targetHandle,-1,'streaming');
 
 % start simulation
 startSimulation(ObjSceneSim,'blocking');
