@@ -175,7 +175,7 @@ classdef VREPSimScene  < handle
         
         function closeConnection(obj)
         
-            if (Connected(obj))
+            if (getConnectionID(obj)~=-1)
                 
                 obj.vrepObj.simxFinish(obj.clientID); 
                     
@@ -183,14 +183,6 @@ classdef VREPSimScene  < handle
             
         end
         
-        function out= Connected(obj)
-             if (obj.clientID ~= -1)
-                out = 1;
-             else
-                 out = 0;
-             end
-        
-        end
         
         function pauseCommunication(obj,enable)
             
@@ -381,14 +373,18 @@ classdef VREPSimScene  < handle
             
             switch operationMode                
                 case 'buffer'
-                     [obj.error_code{14,1},out] = obj.vrepObj.simxGetObjectPosition(obj.clientID,objectHandle, parentHandle, validateOperationMode(obj,operationMode));
+                     [obj.error_code{14,1},data] = obj.vrepObj.simxGetObjectPosition(obj.clientID,objectHandle, parentHandle, validateOperationMode(obj,operationMode));
+                     out = double(data);
                      while (obj.error_code{14,1}~=obj.vrepObj.simx_return_ok)                     
-                        [obj.error_code{14,1},out] = obj.vrepObj.simxGetObjectPosition(obj.clientID,objectHandle, parentHandle, validateOperationMode(obj,operationMode));
+                        [obj.error_code{14,1},data] = obj.vrepObj.simxGetObjectPosition(obj.clientID,objectHandle, parentHandle, validateOperationMode(obj,operationMode));
+                        out = double(data);
                      end                    
                 case 'streaming'                    
-                     [obj.error_code{14,1},out] = obj.vrepObj.simxGetObjectPosition(obj.clientID,objectHandle, parentHandle, validateOperationMode(obj,operationMode));                    
+                     [obj.error_code{14,1},data] = obj.vrepObj.simxGetObjectPosition(obj.clientID,objectHandle, parentHandle, validateOperationMode(obj,operationMode));                    
+                     out = double(data);
                      while (obj.error_code{14,1}~=obj.vrepObj.simx_return_ok)                     
-                        [obj.error_code{14,1},out] = obj.vrepObj.simxGetObjectPosition(obj.clientID,objectHandle, parentHandle, validateOperationMode(obj,operationMode));
+                        [obj.error_code{14,1},data] =obj.vrepObj.simxGetObjectPosition(obj.clientID,objectHandle, parentHandle, validateOperationMode(obj,operationMode));
+                        out = double(data);
                      end    
             
             end                         
@@ -445,14 +441,18 @@ classdef VREPSimScene  < handle
             
             switch operationMode                
                 case 'buffer'
-                     [obj.error_code{17,1},out] = obj.vrepObj.simxGetObjectOrientation(obj.clientID,objectHandle, parentHandle, validateOperationMode(obj,operationMode));
+                     [obj.error_code{17,1},data] = obj.vrepObj.simxGetObjectOrientation(obj.clientID,objectHandle, parentHandle, validateOperationMode(obj,operationMode));
+                     out = double(data);
                      while (obj.error_code{17,1}~=obj.vrepObj.simx_return_ok)                     
-                        [obj.error_code{17,1},out] = obj.vrepObj.simxGetObjectOrientation(obj.clientID,objectHandle, parentHandle, validateOperationMode(obj,operationMode));
+                        [obj.error_code{17,1},data] = obj.vrepObj.simxGetObjectOrientation(obj.clientID,objectHandle, parentHandle, validateOperationMode(obj,operationMode));
+                        out = double(data);
                      end                    
                 case 'streaming'                    
-                     [obj.error_code{17,1},out] = obj.vrepObj.simxGetObjectOrientation(obj.clientID,objectHandle, parentHandle, validateOperationMode(obj,operationMode));                    
+                     [obj.error_code{17,1},data] = obj.vrepObj.simxGetObjectOrientation(obj.clientID,objectHandle, parentHandle, validateOperationMode(obj,operationMode));                    
+                     out = double(data);
                      while (obj.error_code{17,1}~=obj.vrepObj.simx_return_ok)                     
-                        [obj.error_code{17,1},out] = obj.vrepObj.simxGetObjectOrientation(obj.clientID,objectHandle, parentHandle, validateOperationMode(obj,operationMode));
+                        [obj.error_code{17,1},data] = obj.vrepObj.simxGetObjectOrientation(obj.clientID,objectHandle, parentHandle, validateOperationMode(obj,operationMode));
+                        out = double(data);
                      end    
             
             end                         
@@ -467,7 +467,8 @@ classdef VREPSimScene  < handle
             end
             
             
-            [obj.error_code{18,1},out]= obj.vrepObj.simxGetFloatingParameter(obj.clientID,obj.vrepObj.sim_floatparam_simulation_time_step,validateOperationMode(obj,operationMode));
+            [obj.error_code{18,1},data]= obj.vrepObj.simxGetFloatingParameter(obj.clientID,obj.vrepObj.sim_floatparam_simulation_time_step,validateOperationMode(obj,operationMode));
+            out = double(data);
             obj.error_code{18,2} = 'getSimulationTimeStep';
 
 
