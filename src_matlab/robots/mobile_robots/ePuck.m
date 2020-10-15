@@ -13,18 +13,7 @@ classdef ePuck < DifferentialDrive
       
     
     end
-    properties (Access = public)
-
-
-        
-        
-    end
     
-    properties (Access = protected)
-  
-        
-        
-    end
     
     properties (Access = private)
         
@@ -46,6 +35,7 @@ classdef ePuck < DifferentialDrive
         jointPositionOld % previous joint position [rad]        
         deltaDistanceNew % current delta distance [m]        
         deltaDistanceOld % previous delta distance [m]
+        robotState % robot state  [x;y;phi] 
                                                       
     end
     
@@ -67,7 +57,7 @@ classdef ePuck < DifferentialDrive
                     % get robot orientation
                     robotOrient = getObjectOrientation(obj.vrepObj,obj.robotHandle,-1,'streaming');                    
                    % get robot state
-                   robotState = [double(robotPos(1));double(robotPos(2));double(robotOrient(3))];
+                   obj.robotState = [robotPos(1);robotPos(2);robotOrient(3)];
  
                     
                 case 3
@@ -122,17 +112,15 @@ classdef ePuck < DifferentialDrive
             obj.deltaDistanceOld(2) = getJointPosition(obj.vrepObj,obj.jointHandle(2),'streaming')*obj.wheelRadius;      
             
             % set robot state
-            setRobotState(obj,robotState);
+            obj.robotState = robotState;
+
             % get step time
             obj.stepTime =  getSimulationTimeStep(obj.vrepObj,'blocking');
-            % set step time
-            setStepTime(obj,obj.stepTime);
+
            
                   
         end
-        
-   
-
+          
         function out=move(obj,v,omega)
             
             switch nargin
@@ -143,28 +131,31 @@ classdef ePuck < DifferentialDrive
                     omega = 0;                    
             end
             
+            
+            % ----------- set speed robot speed
+            
+                        % compute wheels speed
+            wheelsSpeed = [(2*v-omega*obj.wheelsDistance)/(2*obj.wheelRadius);(2*v+omega*obj.wheelsDistance)/(2*obj.wheelRadius)];  % [rad/s]
+                                                                                    
+            % set wheels speed
+            setSpeed(obj,wheelsSpeed);
+                        
+            
+            % ----------- get feedback
+            
             % get wheels speed
             wheelsSpeed=getSpeed(obj);
               
             % set robot velocity in ego frame
             robotVelocityEgo = [(obj.wheelRadius*wheelsSpeed(1)+obj.wheelRadius*wheelsSpeed(2))/2;0;(obj.wheelRadius*wheelsSpeed(2)-obj.wheelRadius*wheelsSpeed(1))/obj.wheelsDistance];
-            
-            setRobotVelocityEgo(obj,robotVelocityEgo) 
-             
+
             % compute forward kinematics
-            computeForwardKinematics(obj);
-            
+            robotVelocityAllo = computeForwardKinematics(obj,obj.robotState(3),robotVelocityEgo);
+
             % update robot state
-            updateRobotState(obj);
-                                                            
-            % compute wheels speed
-            wheelsSpeed = [(2*v-omega*obj.wheelsDistance)/(2*obj.wheelRadius);(2*v+omega*obj.wheelsDistance)/(2*obj.wheelRadius)];  % [rad/s]
-                                                                                    
-            % set wheels speed
-            setSpeed(obj,wheelsSpeed);
+            obj.robotState = updateRobotState(obj,obj.robotState,robotVelocityAllo,obj.stepTime);                                                          
 
-
-            out = getRobotState(obj);
+            out = obj.robotState;
 
             
         end
@@ -202,7 +193,7 @@ classdef ePuck < DifferentialDrive
             % get robot orientation
             robotOrient = getObjectOrientation(obj.vrepObj,obj.robotHandle,-1,'buffer');                    
             % set robot state
-            out = [double(robotPos(1));double(robotPos(2));double(robotOrient(3))];
+            out = [robotPos(1);robotPos(2);robotOrient(3)];
             
         end
         
@@ -220,18 +211,6 @@ classdef ePuck < DifferentialDrive
                                 
        end
        
-    end
-    
-   
-    methods  (Access = private)
-        
-
-        
-
-        
-
-
-
     end
     
 end
