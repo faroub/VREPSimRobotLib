@@ -134,7 +134,7 @@ classdef ePuck < DifferentialDrive
             
             % ----------- set speed robot speed
             
-                        % compute wheels speed
+            % compute wheels speed
             wheelsSpeed = [(2*v-omega*obj.wheelsDistance)/(2*obj.wheelRadius);(2*v+omega*obj.wheelsDistance)/(2*obj.wheelRadius)];  % [rad/s]
                                                                                     
             % set wheels speed
